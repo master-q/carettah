@@ -36,12 +36,12 @@ myPresentation :: [PresenSlide]
 myPresentation = [
   -- 0
   [renderPngFit 0.3 "start_haskell.png",
-   renderText 10 100 40 "C言語の世界と仲良しに!",
-   renderText 100 200 20 "Kiwamu Okabe"],
+   renderTextCenter 200 55 "C言語の世界と仲良しに",
+   renderTextCenter 300 30 "Kiwamu Okabe"],
   -- 1
-  [renderText 10 100 40 "じゃじゃーんプレゼンツール作ったヨー"],
+  [renderTextCenter 100 40 "じゃじゃーんプレゼンツール作ったヨー"],
   -- 2
-  [renderText 10 100 40 "内容どないっしょ"]
+  [renderTextCenter 100 40 "内容どないっしょ"]
   ]
 
 windowWidth, windowHeight :: Int
@@ -75,15 +75,27 @@ updateCanvas canvas = do
   G.renderWithDrawable win $
     renderSlide n width height
 
+mySetFontSize :: Double -> C.Render ()
+mySetFontSize fsize = do
+  C.selectFontFace (toUTF "Takao P明朝") C.FontSlantNormal C.FontWeightNormal
+  C.setFontSize fsize
+
 renderText :: Double -> Double -> Double -> String -> C.Render ()
 renderText x y fsize text = do
   C.save
-  C.selectFontFace (toUTF "Takao P明朝") C.FontSlantNormal C.FontWeightNormal
-  C.setFontSize $ fsize
+  mySetFontSize fsize
   C.moveTo x y
   C.textPath $ toUTF $ text
   C.fill
   C.stroke
+  C.restore
+
+renderTextCenter :: Double -> Double -> String -> C.Render ()
+renderTextCenter y fsize text = do
+  C.save
+  mySetFontSize fsize
+  (C.TextExtents xb yb w h _ _) <- C.textExtents (toUTF text)
+  renderText (toDouble windowWidth / 2 - w / 2) y fsize text
   C.restore
 
 renderSurface :: Double -> Double -> Double -> C.Surface -> C.Render ()
