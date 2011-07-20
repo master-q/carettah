@@ -9,9 +9,7 @@ import Control.Monad.Reader
 
 import Control.Monad.Trans (liftIO)
 
-data PresenContext = PText {text :: String, posX :: Double, posY :: Double, fsize :: Double}
-
-type PresenSlide = [PresenContext]
+type PresenSlide = [C.Render ()]
 
 -- global value
 data CarettahState = CarettahState { page :: Int }
@@ -37,12 +35,13 @@ prevPage = updatePage $ (\p -> if p == 0 then 0 else p - 1)
 myPresentation :: [PresenSlide]
 myPresentation = [
   -- 0
-  [PText {text = "C言語の世界と仲良しに!", posX = 10, posY = 100, fsize = 40},
-   PText {text = "Kiwamu Okabe", posX = 100, posY = 200, fsize = 20}],
+  [renderPngFit 0.3 "start_haskell.png",
+   renderText 10 100 40 "C言語の世界と仲良しに!",
+   renderText 100 200 20 "Kiwamu Okabe"],
   -- 1
-  [PText {text = "じゃじゃーんプレゼンツール作ったヨー", posX = 10, posY = 100, fsize = 40}],
+  [renderText 10 100 40 "じゃじゃーんプレゼンツール作ったヨー"],
   -- 2
-  [PText {text = "内容どないっしょ", posX = 10, posY = 100, fsize = 40}]
+  [renderText 10 100 40 "内容どないっしょ"]
   ]
 
 windowWidth, windowHeight :: Int
@@ -68,31 +67,40 @@ toUTF (x:xs) | ord x<=0x007F = x:toUTF xs
 			       chr (0x80 .|. (ord x .&. 0x3F)):
 			       toUTF xs
 
-updateCanvas' :: G.DrawingArea -> IO ()
-updateCanvas' canvas = do
+updateCanvas :: G.DrawingArea -> IO ()
+updateCanvas canvas = do
   n <- queryCarettahState page
   win <- G.widgetGetDrawWindow canvas
   (width, height) <- G.widgetGetSize canvas
   G.renderWithDrawable win $
     renderSlide n width height
 
-renderPText :: PresenContext -> C.Render ()
-renderPText pt = do
+renderText :: Double -> Double -> Double -> String -> C.Render ()
+renderText x y fsize text = do
   C.save
-  C.selectFontFace (toUTF "Takaoゴシック") C.FontSlantNormal C.FontWeightNormal
-  C.setFontSize $ fsize pt
-  C.moveTo (posX pt) (posY pt)
-  C.textPath $ toUTF $ text pt
+  C.selectFontFace (toUTF "Takao P明朝") C.FontSlantNormal C.FontWeightNormal
+  C.setFontSize $ fsize
+  C.moveTo x y
+  C.textPath $ toUTF $ text
   C.fill
   C.stroke
   C.restore
 
-renderPng :: Double -> Double -> FilePath -> C.Render ()
-renderPng x y file = do
+renderSurface :: Double -> Double -> Double -> C.Surface -> C.Render ()
+renderSurface x y alpha surface = do
+  C.save
+  C.setSourceSurface surface x y
+  C.paintWithAlpha alpha
+  C.restore
+
+renderPngFit :: Double -> FilePath -> C.Render ()
+renderPngFit alpha file = do
   C.save
   surface <- liftIO $ C.imageSurfaceCreateFromPNG file
-  C.setSourceSurface surface x y
-  C.paint
+  iw <- C.imageSurfaceGetWidth surface
+  ih <- C.imageSurfaceGetHeight surface
+  C.scale (toDouble windowWidth / toDouble iw) (toDouble windowHeight / toDouble ih)
+  renderSurface 0 0 alpha surface
   C.restore
 
 clearCanvas :: Int -> Int -> C.Render ()
@@ -108,8 +116,7 @@ renderSlide :: Int -> Int -> Int -> C.Render ()
 renderSlide s w h = do
   clearCanvas w h
   C.scale (toDouble w / toDouble windowWidth) (toDouble h / toDouble windowHeight)
-  renderPng 10 10 "start_haskell.png"
-  mapM_ renderPText (myPresentation !! s)
+  mapM_ id (myPresentation !! s)
 
 main :: IO ()
 main = do
@@ -128,11 +135,11 @@ main = do
         "F" -> G.windowUnfullscreen window
         "q" -> G.widgetDestroy window
         "j" -> do nextPage
-                  updateCanvas' canvas
+                  updateCanvas canvas
         "k" -> do prevPage
-                  updateCanvas' canvas
+                  updateCanvas canvas
   _ <- G.onDestroy window G.mainQuit
-  G.onExpose canvas $ const (do updateCanvas' canvas
+  G.onExpose canvas $ const (do updateCanvas canvas
                                 return True)
   G.set window [G.containerChild G.:= canvas]
   G.widgetShowAll window
