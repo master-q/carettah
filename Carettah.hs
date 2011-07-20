@@ -40,7 +40,9 @@ myPresentation = [
   [PText {text = "C言語の世界と仲良しに!", posX = 10, posY = 100, fsize = 40},
    PText {text = "Kiwamu Okabe", posX = 100, posY = 200, fsize = 20}],
   -- 1
-  [PText {text = "じゃじゃーんプレゼンツール作ったヨー", posX = 10, posY = 100, fsize = 40}]
+  [PText {text = "じゃじゃーんプレゼンツール作ったヨー", posX = 10, posY = 100, fsize = 40}],
+  -- 2
+  [PText {text = "内容どないっしょ", posX = 10, posY = 100, fsize = 40}]
   ]
 
 windowWidth, windowHeight :: Int
@@ -74,12 +76,12 @@ updateCanvas' canvas = do
   G.renderWithDrawable win $
     renderSlide n width height
 
-renderPText :: Int -> PresenContext -> C.Render ()
-renderPText w pt = do
+renderPText :: PresenContext -> C.Render ()
+renderPText pt = do
   C.save
   C.selectFontFace (toUTF "Takaoゴシック") C.FontSlantNormal C.FontWeightNormal
-  C.setFontSize $ screenSize w $ fsize pt
-  C.moveTo (screenSize w $ posX pt) (screenSize w $ posY pt)
+  C.setFontSize $ fsize pt
+  C.moveTo (posX pt) (posY pt)
   C.textPath $ toUTF $ text pt
   C.fill
   C.stroke
@@ -105,8 +107,9 @@ clearCanvas w h = do
 renderSlide :: Int -> Int -> Int -> C.Render ()
 renderSlide s w h = do
   clearCanvas w h
+  C.scale (toDouble w / toDouble windowWidth) (toDouble h / toDouble windowHeight)
   renderPng 10 10 "start_haskell.png"
-  mapM_ (renderPText w) (myPresentation !! s)
+  mapM_ renderPText (myPresentation !! s)
 
 main :: IO ()
 main = do

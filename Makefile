@@ -7,7 +7,7 @@ lint: Carettah.hs
 	hlint -c Carettah.hs
 
 clean:
-	rm -rf 
+	rm -rf carettah
 	rm -rf *.hi *.o
 	rm -rf *~
 
