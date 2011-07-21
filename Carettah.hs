@@ -1,8 +1,10 @@
 module Main where
 import System
+import System.Mem
 import Data.Char
 import Data.Bits
 import Data.IORef
+import Data.Time
 import System.IO.Unsafe (unsafePerformIO)
 import Control.Monad.Reader
 import Control.Monad.State
@@ -15,10 +17,14 @@ markdown :: String -> P.Pandoc
 markdown = P.readMarkdown P.defaultParserState{ P.stateStandalone = True }
 
 -- global value
-data CarettahState = CarettahState { page :: Int, slides :: [[C.Render ()]] }
+data CarettahState = CarettahState {
+  page :: Int,
+  slides :: [[C.Render ()]],
+  startTime :: UTCTime
+}
 
 carettahState :: IORef CarettahState
-carettahState = unsafePerformIO $ newIORef CarettahState { page = 0, slides = undefined }
+carettahState = unsafePerformIO $ newIORef CarettahState { page = 0, slides = undefined, startTime = undefined }
 
 updateCarettahState :: MonadIO m => (CarettahState -> CarettahState) -> m ()
 updateCarettahState fn = liftIO $! atomicModifyIORef carettahState $ \st -> (fn st, ())
@@ -38,6 +44,11 @@ prevPage = updatePage (\p -> if p == 0 then 0 else p - 1)
 updateSlides :: MonadIO m => ([[C.Render ()]] -> [[C.Render ()]]) -> m ()
 updateSlides fn = updateCarettahState (\s -> s { slides = fn $ slides s })
 
+updateStartTime :: IO ()
+updateStartTime = do
+  t <- getCurrentTime
+  updateCarettahState (\s -> s { startTime = t })
+
 -- constant value
 --- posX,posY,fsizeの値は640x480の画面サイズが基準
 windowWidth, windowHeight :: Int
@@ -55,7 +66,7 @@ textContextX = 40
 textContextY = 150
 textContextSize = 30
 
-toDouble :: Int -> Double
+toDouble :: Integral a => a -> Double
 toDouble = fromIntegral
 
 -- copy from System.Glib.UTFString (gtk2hs/glib/System/Glib/UTFString.hs)
@@ -145,17 +156,18 @@ clearCanvas w h = do
   C.stroke
   C.restore
 
+-- xxx プレゼン時間に応じて波表示
+renderWave :: C.Render ()
+renderWave = do
+  n <- liftIO getCurrentTime
+  s <- queryCarettahState startTime
+  let d = diffUTCTime n s
+  renderText 0 470 20 $ 
+    replicate (round (1 * (fromRational . toRational) d)) '>'
+
 renderTurtle :: Double -> C.Render ()
 renderTurtle progress =
   renderPngSize (20 + (640 - 40 - 40) * progress) 430 40 40 1 "turtle.png"
-
-renderSlide :: Int -> Int -> Int -> C.Render ()
-renderSlide p w h = do
-  s <- queryCarettahState slides
-  clearCanvas w h
-  C.scale (toDouble w / toDouble windowWidth) (toDouble h / toDouble windowHeight)
-  sequence_ (s !! p)
-  renderTurtle $ toDouble p / toDouble (length s - 1)
 
 splitBlocks :: P.Pandoc -> [[P.Block]]
 splitBlocks (P.Pandoc _ blocks) = go blocks
@@ -175,6 +187,16 @@ inlinesToString = foldr go ""
   where go (P.Str s) a = s ++ a
         go P.Space a = ' ' : a
         go x _ = show x
+
+renderSlide :: Int -> Int -> Int -> C.Render ()
+renderSlide p w h = do
+  s <- queryCarettahState slides
+  clearCanvas w h
+  C.scale (toDouble w / toDouble windowWidth) (toDouble h / toDouble windowHeight)
+  sequence_ (s !! p)
+  t <- liftIO getCurrentTime
+  renderWave
+  renderTurtle $ toDouble p / toDouble (length s - 1)
 
 -- 二枚目以降のスライドをRender
 blockToSlide :: [P.Block] -> [C.Render ()]
@@ -212,9 +234,11 @@ updateCanvas canvas = do
   (width, height) <- G.widgetGetSize canvas
   G.renderWithDrawable win $
     renderSlide n width height
+  performGC
 
 main :: IO ()
 main = do
+  updateStartTime
   -- parse markdown
   args <- getArgs
   s <- case args of
@@ -240,6 +264,7 @@ main = do
         "r" -> print "reload" -- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
   _ <- G.onDestroy window G.mainQuit
   G.onExpose canvas $ const (updateCanvas canvas >> return True)
+  G.timeoutAdd (G.widgetQueueDraw canvas >> return True) 100 -- msec
   G.set window [G.containerChild G.:= canvas]
   G.widgetShowAll window
   G.mainGUI

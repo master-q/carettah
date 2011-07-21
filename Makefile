@@ -1,7 +1,7 @@
 all: carettah
 
 carettah: Carettah.hs
-	ghc --make -threaded -Wall Carettah.hs -o carettah
+	ghc --make -Wall Carettah.hs -o carettah
 
 lint: Carettah.hs
 	hlint -c Carettah.hs
