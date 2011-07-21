@@ -48,8 +48,12 @@ updateSlides fn = updateCarettahState (\s -> s { slides = fn $ slides s })
 windowWidth, windowHeight :: Int
 windowWidth   = 640
 windowHeight  = 480
-pngFitAlpha,textTitleY, textTitleSize, textContextY, textContextSize :: Double
+pngFitAlpha,textTitleY, textTitleSize, textContextY, textContextSize, textTitleCoverY, textTitleCoverSize, textContextCoverY, textContextCoverSize :: Double
 pngFitAlpha = 0.3
+textTitleCoverY = 200
+textTitleCoverSize = 40
+textContextCoverY = 300
+textContextCoverSize = 30
 textTitleY = 100
 textTitleSize = 40
 textContextY = 200
@@ -160,16 +164,26 @@ inlinesToString = foldr go ""
 blockToSlide :: [P.Block] -> PresenSlide
 blockToSlide blockss = map go blockss
   where
-    go (P.Para [P.Image [P.Str "background"] (pngfile, _)]) = 
+    go (P.Para [P.Image [P.Str "background"] (pngfile, _)]) =
       renderPngFit pngFitAlpha pngfile
     go (P.Header 1 strs) =
       renderTextCenter textTitleY textTitleSize (inlinesToString strs)
     go (P.BulletList plains) = mapM_ go' plains
       where
         go' [P.Plain strs] = renderTextCenter textContextY textContextSize (inlinesToString strs)
-        go' x = error $ show x -- markdownで書いたもの一部のみをサポート
+        go' x = error $ show x -- 一部のみをサポート
     go (P.Para strs) = renderTextCenter textContextY textContextSize (inlinesToString strs)
-    go x = error $ show x -- markdownで書いたもの一部のみをサポート
+    go x = error $ show x -- 一部のみをサポート
+
+coverSlide :: [P.Block] -> PresenSlide
+coverSlide blocks = map go blocks
+  where
+    go (P.Para [P.Image [P.Str "background"] (pngfile, _)]) =
+      renderPngFit pngFitAlpha pngfile
+    go (P.Header 1 strs) =
+      renderTextCenter textTitleCoverY textTitleCoverSize (inlinesToString strs)
+    go (P.Para strs) = renderTextCenter textContextCoverY textContextCoverSize (inlinesToString strs)
+    go x = error $ show x -- 一部のみをサポート
 
 main :: IO ()
 main = do
@@ -178,7 +192,8 @@ main = do
   s <- case args of
     (x:_) -> U.readFile x
     _     -> error "*** Need markdown filename."
-  updateSlides $ const $ map (blockToSlide . backgroundTop) $ splitBlocks $ markdown s
+  let z = zip (coverSlide:repeat blockToSlide) (splitBlocks $ markdown s)
+    in updateSlides $ const $ map (\p -> fst p . backgroundTop $ snd p) z
   -- start GUI
   _ <- G.initGUI
   window <- G.windowNew
