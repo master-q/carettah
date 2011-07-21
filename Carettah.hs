@@ -235,14 +235,11 @@ main = do
         "f" -> G.windowFullscreen window
         "F" -> G.windowUnfullscreen window
         "q" -> G.widgetDestroy window
-        "j" -> do nextPage
-                  updateCanvas canvas
-        "k" -> do prevPage
-                  updateCanvas canvas
+        "j" -> nextPage >> G.widgetQueueDraw canvas
+        "k" -> prevPage >> G.widgetQueueDraw canvas
         "r" -> print "reload" -- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
   _ <- G.onDestroy window G.mainQuit
-  G.onExpose canvas $ const (do updateCanvas canvas
-                                return True)
+  G.onExpose canvas $ const (updateCanvas canvas >> return True)
   G.set window [G.containerChild G.:= canvas]
   G.widgetShowAll window
   G.mainGUI
