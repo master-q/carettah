@@ -1,18 +1,15 @@
-import qualified Graphics.UI.Gtk as G
-import qualified Graphics.Rendering.Cairo as C
-
+module Main where
 import System
-
 import Data.Char
 import Data.Bits
 import Data.IORef
 import System.IO.Unsafe (unsafePerformIO)
 import Control.Monad.Reader
-
-import Control.Monad.Trans (liftIO)
-
+import Control.Monad.State
+import Control.Monad.Trans
+import qualified Graphics.UI.Gtk as G
+import qualified Graphics.Rendering.Cairo as C
 import qualified Text.Pandoc as P
-import qualified System.IO.UTF8 as U
 
 markdown :: String -> P.Pandoc
 markdown = P.readMarkdown P.defaultParserState{ P.stateStandalone = True }
@@ -48,15 +45,16 @@ updateSlides fn = updateCarettahState (\s -> s { slides = fn $ slides s })
 windowWidth, windowHeight :: Int
 windowWidth   = 640
 windowHeight  = 480
-pngFitAlpha,textTitleY, textTitleSize, textContextY, textContextSize, textTitleCoverY, textTitleCoverSize, textContextCoverY, textContextCoverSize :: Double
+pngFitAlpha,textTitleY, textTitleSize, textContextY, textContextSize, textTitleCoverY, textTitleCoverSize, textContextX, textContextCoverY, textContextCoverSize :: Double
 pngFitAlpha = 0.3
-textTitleCoverY = 200
+textTitleCoverY = 220
 textTitleCoverSize = 40
-textContextCoverY = 300
+textContextCoverY = 350
 textContextCoverSize = 30
 textTitleY = 100
 textTitleSize = 40
-textContextY = 200
+textContextX = 40
+textContextY = 150
 textContextSize = 30
 
 toDouble :: Int -> Double
@@ -101,13 +99,23 @@ renderText x y fsize text = do
   C.stroke
   C.restore
 
+renderTextNextline :: Double -> Double -> String -> Double -> C.Render Double
+renderTextNextline x fsize text ypos = do
+  C.save
+  mySetFontSize fsize
+  (C.TextExtents xb yb w h _ _) <- C.textExtents (toUTF text)
+  C.restore
+  let nypos = ypos + (h * 1.4)
+  renderText x nypos fsize text
+  return nypos
+
 renderTextCenter :: Double -> Double -> String -> C.Render ()
 renderTextCenter y fsize text = do
   C.save
   mySetFontSize fsize
   (C.TextExtents xb yb w h _ _) <- C.textExtents (toUTF text)
-  renderText (toDouble windowWidth / 2 - w / 2) y fsize text
   C.restore
+  renderText (toDouble windowWidth / 2 - w / 2) y fsize text
 
 renderSurface :: Double -> Double -> Double -> C.Surface -> C.Render ()
 renderSurface x y alpha surface = do
@@ -158,7 +166,7 @@ backgroundTop blocks = filter go blocks ++ filter (not . go) blocks
 inlinesToString :: [P.Inline] -> String
 inlinesToString = foldr go ""
   where go (P.Str s) a = s ++ a
-        go P.Space a = " " ++ a
+        go P.Space a = ' ' : a
         go x _ = show x
 
 blockToSlide :: [P.Block] -> PresenSlide
@@ -168,11 +176,13 @@ blockToSlide blockss = map go blockss
       renderPngFit pngFitAlpha pngfile
     go (P.Header 1 strs) =
       renderTextCenter textTitleY textTitleSize (inlinesToString strs)
-    go (P.BulletList plains) = mapM_ go' plains
+    go (P.BulletList plains) = go'' textContextY $ map go' plains
       where
-        go' [P.Plain strs] = renderTextCenter textContextY textContextSize (inlinesToString strs)
+        go'' ypos [] = return ()
+        go'' ypos (x:xs) = x ypos >>= (`go''` xs)
+        go' [P.Plain strs] = renderTextNextline textContextX textContextSize ("☆ " ++ inlinesToString strs)
         go' x = error $ show x -- 一部のみをサポート
-    go (P.Para strs) = renderTextCenter textContextY textContextSize (inlinesToString strs)
+    go (P.Para strs) = renderText textContextX textContextY textContextSize (inlinesToString strs)
     go x = error $ show x -- 一部のみをサポート
 
 coverSlide :: [P.Block] -> PresenSlide
@@ -190,7 +200,7 @@ main = do
   -- parse markdown
   args <- getArgs
   s <- case args of
-    (x:_) -> U.readFile x
+    (x:_) -> readFile x
     _     -> error "*** Need markdown filename."
   let z = zip (coverSlide:repeat blockToSlide) (splitBlocks $ markdown s)
     in updateSlides $ const $ map (\p -> fst p . backgroundTop $ snd p) z
