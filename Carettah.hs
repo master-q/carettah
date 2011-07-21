@@ -43,10 +43,17 @@ prevPage = updatePage (\p -> if p == 0 then 0 else p - 1)
 updateSlides :: MonadIO m => ([PresenSlide] -> [PresenSlide]) -> m ()
 updateSlides fn = updateCarettahState (\s -> s { slides = fn $ slides s })
 
--- posX,posY,fsizeの値は640x480の画面サイズが基準
+-- constant value
+--- posX,posY,fsizeの値は640x480の画面サイズが基準
 windowWidth, windowHeight :: Int
 windowWidth   = 640
 windowHeight  = 480
+pngFitAlpha,textTitleY, textTitleSize, textContextY, textContextSize :: Double
+pngFitAlpha = 0.3
+textTitleY = 100
+textTitleSize = 40
+textContextY = 200
+textContextSize = 30
 
 toDouble :: Int -> Double
 toDouble = fromIntegral
@@ -129,7 +136,7 @@ renderSlide p w h = do
   s <- queryCarettahState slides
   clearCanvas w h
   C.scale (toDouble w / toDouble windowWidth) (toDouble h / toDouble windowHeight)
-  mapM_ id (s !! p)
+  sequence_ (s !! p)
 
 splitBlocks :: P.Pandoc -> [[P.Block]]
 splitBlocks (P.Pandoc _ blocks) = go blocks
@@ -154,12 +161,14 @@ blockToSlide :: [P.Block] -> PresenSlide
 blockToSlide blockss = map go blockss
   where
     go (P.Para [P.Image [P.Str "background"] (pngfile, _)]) = 
-      renderPngFit 0.3 pngfile
+      renderPngFit pngFitAlpha pngfile
     go (P.Header 1 strs) =
-      renderTextCenter 100 40 (inlinesToString strs)
-    go (P.BulletList plains) = 
-      renderTextCenter 300 30 (show plains) -- xxxx
-    go (P.Para strs) = renderTextCenter 300 30 (inlinesToString strs)
+      renderTextCenter textTitleY textTitleSize (inlinesToString strs)
+    go (P.BulletList plains) = mapM_ go' plains
+      where
+        go' [P.Plain strs] = renderTextCenter textContextY textContextSize (inlinesToString strs)
+        go' x = error $ show x -- markdownで書いたもの一部のみをサポート
+    go (P.Para strs) = renderTextCenter textContextY textContextSize (inlinesToString strs)
     go x = error $ show x -- markdownで書いたもの一部のみをサポート
 
 main :: IO ()
