@@ -14,10 +14,8 @@ import qualified Text.Pandoc as P
 markdown :: String -> P.Pandoc
 markdown = P.readMarkdown P.defaultParserState{ P.stateStandalone = True }
 
-type PresenSlide = [C.Render ()]
-
 -- global value
-data CarettahState = CarettahState { page :: Int, slides :: [PresenSlide] }
+data CarettahState = CarettahState { page :: Int, slides :: [[C.Render ()]] }
 
 carettahState :: IORef CarettahState
 carettahState = unsafePerformIO $ newIORef CarettahState { page = 0, slides = undefined }
@@ -37,7 +35,7 @@ nextPage = do s <- queryCarettahState slides
               updatePage (\p -> if p >= max then max else p + 1)
 prevPage = updatePage (\p -> if p == 0 then 0 else p - 1)
 
-updateSlides :: MonadIO m => ([PresenSlide] -> [PresenSlide]) -> m ()
+updateSlides :: MonadIO m => ([[C.Render ()]] -> [[C.Render ()]]) -> m ()
 updateSlides fn = updateCarettahState (\s -> s { slides = fn $ slides s })
 
 -- constant value
@@ -60,9 +58,6 @@ textContextSize = 30
 toDouble :: Int -> Double
 toDouble = fromIntegral
 
-screenSize :: Int -> Double -> Double
-screenSize nowWidth size = size * (toDouble nowWidth / toDouble windowWidth)
-
 -- copy from System.Glib.UTFString (gtk2hs/glib/System/Glib/UTFString.hs)
 -- 本来はCStringを使うとこに埋め込んどくべき。gtk2hsを参考に
 toUTF :: String -> String
@@ -75,14 +70,6 @@ toUTF (x:xs) | ord x<=0x007F = x:toUTF xs
 			       chr (0x80 .|. ((ord x `shift` (-6)) .&. 0x3F)):
 			       chr (0x80 .|. (ord x .&. 0x3F)):
 			       toUTF xs
-
-updateCanvas :: G.DrawingArea -> IO ()
-updateCanvas canvas = do
-  n <- queryCarettahState page
-  win <- G.widgetGetDrawWindow canvas
-  (width, height) <- G.widgetGetSize canvas
-  G.renderWithDrawable win $
-    renderSlide n width height
 
 mySetFontSize :: Double -> C.Render ()
 mySetFontSize fsize = do
@@ -124,12 +111,27 @@ renderSurface x y alpha surface = do
   C.paintWithAlpha alpha
   C.restore
 
+pngSurfaceSize :: FilePath -> C.Render (C.Surface, Int, Int)
+pngSurfaceSize file = do
+  surface <- liftIO $ C.imageSurfaceCreateFromPNG file
+  w <- C.imageSurfaceGetWidth surface
+  h <- C.imageSurfaceGetHeight surface
+  return (surface, w, h)
+
+renderPngSize :: Double -> Double -> Double -> Double -> Double -> FilePath -> C.Render ()
+renderPngSize x y w h alpha file = do
+  C.save
+  (surface, iw, ih) <- pngSurfaceSize file
+  let xscale = w / toDouble iw
+  let yscale = h / toDouble ih
+  C.scale xscale yscale
+  renderSurface (x / xscale) (y / yscale) alpha surface
+  C.restore
+
 renderPngFit :: Double -> FilePath -> C.Render ()
 renderPngFit alpha file = do
   C.save
-  surface <- liftIO $ C.imageSurfaceCreateFromPNG file
-  iw <- C.imageSurfaceGetWidth surface
-  ih <- C.imageSurfaceGetHeight surface
+  (surface, iw, ih) <- pngSurfaceSize file
   C.scale (toDouble windowWidth / toDouble iw) (toDouble windowHeight / toDouble ih)
   renderSurface 0 0 alpha surface
   C.restore
@@ -143,12 +145,17 @@ clearCanvas w h = do
   C.stroke
   C.restore
 
+renderTurtle :: Double -> C.Render ()
+renderTurtle progress =
+  renderPngSize (20 + (640 - 40 - 40) * progress) 430 40 40 1 "turtle.png"
+
 renderSlide :: Int -> Int -> Int -> C.Render ()
 renderSlide p w h = do
   s <- queryCarettahState slides
   clearCanvas w h
   C.scale (toDouble w / toDouble windowWidth) (toDouble h / toDouble windowHeight)
   sequence_ (s !! p)
+  renderTurtle $ toDouble p / toDouble (length s - 1)
 
 splitBlocks :: P.Pandoc -> [[P.Block]]
 splitBlocks (P.Pandoc _ blocks) = go blocks
@@ -169,7 +176,8 @@ inlinesToString = foldr go ""
         go P.Space a = ' ' : a
         go x _ = show x
 
-blockToSlide :: [P.Block] -> PresenSlide
+-- 二枚目以降のスライドをRender
+blockToSlide :: [P.Block] -> [C.Render ()]
 blockToSlide blockss = map go blockss
   where
     go (P.Para [P.Image [P.Str "background"] (pngfile, _)]) =
@@ -182,10 +190,12 @@ blockToSlide blockss = map go blockss
         go'' ypos (x:xs) = x ypos >>= (`go''` xs)
         go' [P.Plain strs] = renderTextNextline textContextX textContextSize ("☆ " ++ inlinesToString strs)
         go' x = error $ show x -- 一部のみをサポート
-    go (P.Para strs) = renderText textContextX textContextY textContextSize (inlinesToString strs)
+    go (P.Para strs) = do renderTextNextline textContextX textContextSize (inlinesToString strs) textContextY
+                          return ()
     go x = error $ show x -- 一部のみをサポート
 
-coverSlide :: [P.Block] -> PresenSlide
+-- スライド表紙をRender
+coverSlide :: [P.Block] -> [C.Render ()]
 coverSlide blocks = map go blocks
   where
     go (P.Para [P.Image [P.Str "background"] (pngfile, _)]) =
@@ -194,6 +204,14 @@ coverSlide blocks = map go blocks
       renderTextCenter textTitleCoverY textTitleCoverSize (inlinesToString strs)
     go (P.Para strs) = renderTextCenter textContextCoverY textContextCoverSize (inlinesToString strs)
     go x = error $ show x -- 一部のみをサポート
+
+updateCanvas :: G.DrawingArea -> IO ()
+updateCanvas canvas = do
+  n <- queryCarettahState page
+  win <- G.widgetGetDrawWindow canvas
+  (width, height) <- G.widgetGetSize canvas
+  G.renderWithDrawable win $
+    renderSlide n width height
 
 main :: IO ()
 main = do
