@@ -117,7 +117,7 @@ renderText :: CairoPosition -> CairoPosition -> Double -> String -> C.Render Dou
 renderText x y fsize text = do
   C.save
   mySetFontSize fsize
-  (C.TextExtents _ _ w h _ _) <- C.textExtents (toUTF text)
+  (C.TextExtents _ yb w h _ _) <- C.textExtents (toUTF text)
   C.restore
   let truePosition (CairoPosition x') (CairoPosition y') = return (x', y')
       truePosition CairoCenter (CairoPosition y') =
@@ -125,7 +125,7 @@ renderText x y fsize text = do
       truePosition x' y' =
         error $ "called with x=" ++ show x' ++ " y=" ++ show y'
   (xt, yt) <- truePosition x y
-  let nypos = yt + (h * 1.4)
+  let nypos = yt + h - yb
   C.save
   mySetFontSize fsize
   C.moveTo xt nypos
@@ -255,7 +255,7 @@ blockToSlide blockss = map go blockss
         go' x = error $ show x -- 一部のみをサポート
     go (P.CodeBlock (_, _, _) ss) = \y -> yposSequence y $ map go' (lines ss)
       where
-        go' s ypos = renderText (CairoPosition tcx) (CairoPosition ypos) tcbs s >> return (ypos + tcbs)
+        go' s ypos = renderText (CairoPosition tcx) (CairoPosition ypos) tcbs s
     go (P.Para strs) =
       \y -> renderText (CairoPosition tcx) (CairoPosition y) tcs (inlinesToString strs)
     go x = error $ show x -- 一部のみをサポート
