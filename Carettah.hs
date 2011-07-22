@@ -7,8 +7,8 @@ import Data.IORef
 import Data.Time
 import System.IO.Unsafe (unsafePerformIO)
 import Control.Monad.Reader
-import Control.Monad.State
-import Control.Monad.Trans
+--import Control.Monad.State
+--import Control.Monad.Trans
 import qualified Graphics.UI.Gtk as G
 import qualified Graphics.Rendering.Cairo as C
 import qualified Text.Pandoc as P
@@ -37,8 +37,8 @@ updatePage fn = updateCarettahState (\s -> s { page = fn $ page s })
 
 nextPage, prevPage :: MonadIO m => m ()
 nextPage = do s <- queryCarettahState slides
-              let max = length s - 1
-              updatePage (\p -> if p >= max then max else p + 1)
+              let maxpage = length s - 1
+              updatePage (\p -> if p >= maxpage then maxpage else p + 1)
 prevPage = updatePage (\p -> if p == 0 then 0 else p - 1)
 
 updateSlides :: MonadIO m => ([[C.Render ()]] -> [[C.Render ()]]) -> m ()
@@ -93,15 +93,14 @@ renderText x y fsize text = do
   mySetFontSize fsize
   C.moveTo x y
   C.textPath $ toUTF text
-  C.fill
-  C.stroke
-  C.restore
+  C.fill >> C.stroke >> C.restore
 
 renderTextNextline :: Double -> Double -> String -> Double -> C.Render Double
 renderTextNextline x fsize text ypos = do
   C.save
   mySetFontSize fsize
-  (C.TextExtents xb yb w h _ _) <- C.textExtents (toUTF text)
+--  (C.TextExtents xb yb w h _ _) <- C.textExtents (toUTF text)
+  (C.TextExtents _ _ _ h _ _) <- C.textExtents (toUTF text)
   C.restore
   let nypos = ypos + (h * 1.4)
   renderText x nypos fsize text
@@ -111,7 +110,7 @@ renderTextCenter :: Double -> Double -> String -> C.Render ()
 renderTextCenter y fsize text = do
   C.save
   mySetFontSize fsize
-  (C.TextExtents xb yb w h _ _) <- C.textExtents (toUTF text)
+  (C.TextExtents _ _ w _ _ _) <- C.textExtents (toUTF text)
   C.restore
   renderText (toDouble windowWidth / 2 - w / 2) y fsize text
 
@@ -152,18 +151,20 @@ clearCanvas w h = do
   C.save
   C.setSourceRGB 1 1 1
   C.rectangle 0 0 (toDouble w) (toDouble h)
-  C.fill
-  C.stroke
-  C.restore
+  C.fill >> C.stroke >> C.restore
 
 -- xxx プレゼン時間に応じて波表示
-renderWave :: C.Render ()
-renderWave = do
-  n <- liftIO getCurrentTime
+elapsedSecFromStart :: IO Double
+elapsedSecFromStart = do
+  n <- getCurrentTime
   s <- queryCarettahState startTime
   let d = diffUTCTime n s
-  renderText 0 470 20 $ 
-    replicate (round (1 * (fromRational . toRational) d)) '>'
+  return $ (fromRational . toRational) d
+
+renderWave :: C.Render ()
+renderWave = do
+  sec <- liftIO elapsedSecFromStart
+  renderText 0 470 20 $ replicate (round sec) '>'
 
 renderTurtle :: Double -> C.Render ()
 renderTurtle progress =
@@ -194,7 +195,6 @@ renderSlide p w h = do
   clearCanvas w h
   C.scale (toDouble w / toDouble windowWidth) (toDouble h / toDouble windowHeight)
   sequence_ (s !! p)
-  t <- liftIO getCurrentTime
   renderWave
   renderTurtle $ toDouble p / toDouble (length s - 1)
 
@@ -208,12 +208,12 @@ blockToSlide blockss = map go blockss
       renderTextCenter textTitleY textTitleSize (inlinesToString strs)
     go (P.BulletList plains) = go'' textContextY $ map go' plains
       where
-        go'' ypos [] = return ()
+        go'' _ [] = return ()
         go'' ypos (x:xs) = x ypos >>= (`go''` xs)
         go' [P.Plain strs] = renderTextNextline textContextX textContextSize ("☆ " ++ inlinesToString strs)
         go' x = error $ show x -- 一部のみをサポート
-    go (P.Para strs) = do renderTextNextline textContextX textContextSize (inlinesToString strs) textContextY
-                          return ()
+    go (P.Para strs) =
+      renderTextNextline textContextX textContextSize (inlinesToString strs) textContextY >> return ()
     go x = error $ show x -- 一部のみをサポート
 
 -- スライド表紙をRender
@@ -252,7 +252,7 @@ main = do
   canvas <- G.drawingAreaNew
   G.widgetSetSizeRequest window windowWidth windowHeight
   -- key event
-  window `G.on` G.keyPressEvent $ G.tryEvent $ do
+  _ <- window `G.on` G.keyPressEvent $ G.tryEvent $ do
     keyName <- G.eventKeyName
     liftIO $
       case keyName of
@@ -262,9 +262,10 @@ main = do
         "j" -> nextPage >> G.widgetQueueDraw canvas
         "k" -> prevPage >> G.widgetQueueDraw canvas
         "r" -> print "reload" -- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        _   -> return ()
   _ <- G.onDestroy window G.mainQuit
-  G.onExpose canvas $ const (updateCanvas canvas >> return True)
-  G.timeoutAdd (G.widgetQueueDraw canvas >> return True) 100 -- msec
+  _ <- G.onExpose canvas $ const (updateCanvas canvas >> return True)
+  _ <- G.timeoutAdd (G.widgetQueueDraw canvas >> return True) 100 -- msec
   G.set window [G.containerChild G.:= canvas]
   G.widgetShowAll window
   G.mainGUI
