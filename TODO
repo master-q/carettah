@@ -1,0 +1,2 @@
+* pangoを使ってソースコードブロックを綺麗に黒で表示
+* highlightPangoLayoutを作ってshowLayoutでソースコードを色付き表示 (参考: gtk2hs/cairo/demo/Drawing.hs)
