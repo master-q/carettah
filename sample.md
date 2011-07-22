@@ -23,3 +23,12 @@ Kiwamu Okabe
 * pandocで書ける
 * wiiリモコン使える
 * フォント綺麗？
+
+# ソースコード例
+
+~~~ { .haskell }
+class Stack s where
+  empty :: s b
+  isempty :: s b -> Bool
+  cons :: s b -> b -> s b
+~~~

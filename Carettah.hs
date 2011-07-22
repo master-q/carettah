@@ -69,6 +69,7 @@ data Config = Config {
   textContextX :: Double,
   textContextCoverY :: Double,
   textContextCoverSize :: Double,
+  textCodeBlockSize :: Double,
   turtleSize :: Double,
   waveSize :: Double
   }
@@ -86,6 +87,7 @@ gCfg = Config {
   textContextX = 40,
   textContextY = 150,
   textContextSize = 30,
+  textCodeBlockSize = 20,
   turtleSize = 40,
   waveSize = 20
   }
@@ -240,6 +242,7 @@ blockToSlide blockss = map go blockss
     tts = textTitleSize gCfg
     tcx = textContextX gCfg
     tcs = textContextSize gCfg
+    tcbs = textCodeBlockSize gCfg
     go :: P.Block -> Double -> C.Render Double
     go (P.Para [P.Image [P.Str "background"] (pngfile, _)]) =
       \y -> renderPngFit ag pngfile >> return y
@@ -250,6 +253,9 @@ blockToSlide blockss = map go blockss
         go' [P.Plain strs] =
           \ypos -> renderText (CairoPosition tcx) (CairoPosition ypos) tcs ("☆ " ++ inlinesToString strs)
         go' x = error $ show x -- 一部のみをサポート
+    go (P.CodeBlock (_, _, _) ss) = \y -> yposSequence y $ map go' (lines ss)
+      where
+        go' s ypos = renderText (CairoPosition tcx) (CairoPosition ypos) tcbs s >> return (ypos + tcbs)
     go (P.Para strs) =
       \y -> renderText (CairoPosition tcx) (CairoPosition y) tcs (inlinesToString strs)
     go x = error $ show x -- 一部のみをサポート
