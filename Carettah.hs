@@ -131,10 +131,6 @@ renderText x y fsize text = do
   C.fill >> C.stroke >> C.restore
   return nypos
 
-renderTextNextline :: Double -> Double -> String -> Double -> C.Render Double
-renderTextNextline x fsize text ypos =
-  renderText (CairoPosition x) (CairoPosition ypos) fsize text
-
 renderSurface :: Double -> Double -> Double -> C.Surface -> C.Render ()
 renderSurface x y alpha surface = do
   C.save
@@ -251,7 +247,8 @@ blockToSlide blockss = map go blockss
       \y -> renderText CairoCenter (CairoPosition tty) tts (inlinesToString strs) >> return y
     go (P.BulletList plains) = \y -> yposSequence y $ map go' plains
       where
-        go' [P.Plain strs] = renderTextNextline tcx tcs ("☆ " ++ inlinesToString strs)
+        go' [P.Plain strs] =
+          \ypos -> renderText (CairoPosition tcx) (CairoPosition ypos) tcs ("☆ " ++ inlinesToString strs)
         go' x = error $ show x -- 一部のみをサポート
     go (P.Para strs) =
       \y -> renderText (CairoPosition tcx) (CairoPosition y) tcs (inlinesToString strs)
