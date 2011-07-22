@@ -59,17 +59,19 @@ updateStartTime = do
 windowWidth, windowHeight :: Int
 windowWidth   = 640
 windowHeight  = 480
-pngFitAlpha,textTitleY, textTitleSize, textContextY, textContextSize, textTitleCoverY, textTitleCoverSize, textContextX, textContextCoverY, textContextCoverSize :: Double
+pngFitAlpha,textTitleY, textTitleSize, textContextY, textContextSize, textTitleCoverY, textTitleCoverSize, textContextX, textContextCoverY, textContextCoverSize, turtleSize, waveSize :: Double
 pngFitAlpha = 0.3
-textTitleCoverY = 220
+textTitleCoverY = 170
 textTitleCoverSize = 40
-textContextCoverY = 350
+textContextCoverY = 300
 textContextCoverSize = 30
-textTitleY = 100
+textTitleY = 60
 textTitleSize = 40
 textContextX = 40
 textContextY = 150
 textContextSize = 30
+turtleSize = 40
+waveSize = 20
 
 toDouble :: Integral a => a -> Double
 toDouble = fromIntegral
@@ -92,34 +94,29 @@ mySetFontSize fsize = do
   C.selectFontFace (toUTF "Takao P明朝") C.FontSlantNormal C.FontWeightNormal
   C.setFontSize fsize
 
-renderText :: CairoPosition -> CairoPosition -> Double -> String -> C.Render ()
+renderText :: CairoPosition -> CairoPosition -> Double -> String -> C.Render Double
 renderText x y fsize text = do
+  C.save
+  mySetFontSize fsize
+  (C.TextExtents _ _ w h _ _) <- C.textExtents (toUTF text)
+  C.restore
   let truePosition (CairoPosition x') (CairoPosition y') = return (x', y')
-      truePosition CairoCenter (CairoPosition y') = do
-          C.save
-          mySetFontSize fsize
-          (C.TextExtents _ _ w _ _ _) <- C.textExtents (toUTF text)
-          C.restore
+      truePosition CairoCenter (CairoPosition y') =
           return (toDouble windowWidth / 2 - w / 2, y')
       truePosition x' y' =
         error $ "called with x=" ++ show x' ++ " y=" ++ show y'
   (xt, yt) <- truePosition x y
+  let nypos = yt + (h * 1.4)
   C.save
   mySetFontSize fsize
-  C.moveTo xt yt
+  C.moveTo xt nypos
   C.textPath $ toUTF text
   C.fill >> C.stroke >> C.restore
+  return nypos
 
 renderTextNextline :: Double -> Double -> String -> Double -> C.Render Double
-renderTextNextline x fsize text ypos = do
-  C.save
-  mySetFontSize fsize
---  (C.TextExtents xb yb w h _ _) <- C.textExtents (toUTF text)
-  (C.TextExtents _ _ _ h _ _) <- C.textExtents (toUTF text)
-  C.restore
-  let nypos = ypos + (h * 1.4)
-  renderText (CairoPosition x) (CairoPosition nypos) fsize text
-  return nypos
+renderTextNextline x fsize text ypos =
+  renderText (CairoPosition x) (CairoPosition ypos) fsize text
 
 renderSurface :: Double -> Double -> Double -> C.Surface -> C.Render ()
 renderSurface x y alpha surface = do
@@ -171,11 +168,12 @@ elapsedSecFromStart = do
 renderWave :: C.Render ()
 renderWave = do
   sec <- liftIO elapsedSecFromStart
-  renderText (CairoPosition 0) (CairoPosition 470) 20 $ replicate (round sec) '>'
+  _ <- renderText (CairoPosition 0) (CairoPosition $ toDouble windowHeight - waveSize) waveSize $ replicate (round sec) '>'
+  return ()
 
 renderTurtle :: Double -> C.Render ()
 renderTurtle progress =
-  renderPngSize (20 + (640 - 40 - 40) * progress) 430 40 40 1 "turtle.png"
+  renderPngSize (turtleSize / 2 + (toDouble windowWidth - turtleSize - turtleSize) * progress) (toDouble windowHeight - turtleSize) turtleSize turtleSize 1 "turtle.png"
 
 splitBlocks :: P.Pandoc -> [[P.Block]]
 splitBlocks (P.Pandoc _ blocks) = go blocks
@@ -212,7 +210,7 @@ blockToSlide blockss = map go blockss
     go (P.Para [P.Image [P.Str "background"] (pngfile, _)]) =
       renderPngFit pngFitAlpha pngfile
     go (P.Header 1 strs) =
-      renderText CairoCenter (CairoPosition textTitleY) textTitleSize (inlinesToString strs)
+      renderText CairoCenter (CairoPosition textTitleY) textTitleSize (inlinesToString strs) >> return ()
     go (P.BulletList plains) = go'' textContextY $ map go' plains
       where
         go'' _ [] = return ()
@@ -220,7 +218,7 @@ blockToSlide blockss = map go blockss
         go' [P.Plain strs] = renderTextNextline textContextX textContextSize ("☆ " ++ inlinesToString strs)
         go' x = error $ show x -- 一部のみをサポート
     go (P.Para strs) =
-      renderTextNextline textContextX textContextSize (inlinesToString strs) textContextY >> return ()
+      renderText (CairoPosition textContextX) (CairoPosition textContextY) textContextSize (inlinesToString strs) >> return ()
     go x = error $ show x -- 一部のみをサポート
 
 -- スライド表紙をRender
@@ -230,8 +228,8 @@ coverSlide blocks = map go blocks
     go (P.Para [P.Image [P.Str "background"] (pngfile, _)]) =
       renderPngFit pngFitAlpha pngfile
     go (P.Header 1 strs) =
-      renderText CairoCenter (CairoPosition textTitleCoverY) textTitleCoverSize (inlinesToString strs)
-    go (P.Para strs) = renderText CairoCenter (CairoPosition textContextCoverY) textContextCoverSize (inlinesToString strs)
+      renderText CairoCenter (CairoPosition textTitleCoverY) textTitleCoverSize (inlinesToString strs) >> return ()
+    go (P.Para strs) = renderText CairoCenter (CairoPosition textContextCoverY) textContextCoverSize (inlinesToString strs) >> return ()
     go x = error $ show x -- 一部のみをサポート
 
 updateCanvas :: G.DrawingArea -> IO ()
@@ -268,7 +266,7 @@ main = do
         "q" -> G.widgetDestroy window
         "j" -> nextPage >> G.widgetQueueDraw canvas
         "k" -> prevPage >> G.widgetQueueDraw canvas
-        "r" -> print "reload" -- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        "r" -> print "TODO: reload slides" -- xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         _   -> return ()
   _ <- G.onDestroy window G.mainQuit
   _ <- G.onExpose canvas $ const (updateCanvas canvas >> return True)
