@@ -26,7 +26,7 @@ data CarettahState = CarettahState {
   page :: Int,
   slides :: [[C.Render ()]],
   startTime :: UTCTime
-}
+  }
 
 carettahState :: IORef CarettahState
 carettahState = unsafePerformIO $ newIORef CarettahState { page = 0, slides = undefined, startTime = undefined }
@@ -55,23 +55,40 @@ updateStartTime = do
   updateCarettahState (\s -> s { startTime = t })
 
 -- constant value
---- posX,posY,fsizeの値は640x480の画面サイズが基準
-windowWidth, windowHeight :: Int
-windowWidth   = 640
-windowHeight  = 480
-pngFitAlpha,textTitleY, textTitleSize, textContextY, textContextSize, textTitleCoverY, textTitleCoverSize, textContextX, textContextCoverY, textContextCoverSize, turtleSize, waveSize :: Double
-pngFitAlpha = 0.3
-textTitleCoverY = 170
-textTitleCoverSize = 40
-textContextCoverY = 300
-textContextCoverSize = 30
-textTitleY = 60
-textTitleSize = 40
-textContextX = 40
-textContextY = 150
-textContextSize = 30
-turtleSize = 40
-waveSize = 20
+data Config = Config {
+  --- posX,posY,fsizeの値は640x480の画面サイズが基準
+  canvasW :: Int,
+  canvasH :: Int,
+  alphaBackG :: Double,
+  textTitleY :: Double,
+  textTitleSize :: Double,
+  textContextY :: Double,
+  textContextSize :: Double,
+  textTitleCoverY :: Double,
+  textTitleCoverSize :: Double,
+  textContextX :: Double,
+  textContextCoverY :: Double,
+  textContextCoverSize :: Double,
+  turtleSize :: Double,
+  waveSize :: Double
+  }
+gCfg :: Config
+gCfg = Config {
+  canvasW   = 640,
+  canvasH  = 480,
+  alphaBackG = 0.3,
+  textTitleCoverY = 170,
+  textTitleCoverSize = 40,
+  textContextCoverY = 300,
+  textContextCoverSize = 30,
+  textTitleY = 60,
+  textTitleSize = 40,
+  textContextX = 40,
+  textContextY = 150,
+  textContextSize = 30,
+  turtleSize = 40,
+  waveSize = 20
+  }
 
 toDouble :: Integral a => a -> Double
 toDouble = fromIntegral
@@ -102,7 +119,7 @@ renderText x y fsize text = do
   C.restore
   let truePosition (CairoPosition x') (CairoPosition y') = return (x', y')
       truePosition CairoCenter (CairoPosition y') =
-          return (toDouble windowWidth / 2 - w / 2, y')
+          return (toDouble (canvasW gCfg) / 2 - w / 2, y')
       truePosition x' y' =
         error $ "called with x=" ++ show x' ++ " y=" ++ show y'
   (xt, yt) <- truePosition x y
@@ -146,7 +163,9 @@ renderPngFit :: Double -> FilePath -> C.Render ()
 renderPngFit alpha file = do
   C.save
   (surface, iw, ih) <- pngSurfaceSize file
-  C.scale (toDouble windowWidth / toDouble iw) (toDouble windowHeight / toDouble ih)
+  let cw = toDouble $ canvasW gCfg
+      ch = toDouble $ canvasH gCfg
+  C.scale (cw / toDouble iw) (ch / toDouble ih)
   renderSurface 0 0 alpha surface
   C.restore
 
@@ -168,12 +187,17 @@ elapsedSecFromStart = do
 renderWave :: C.Render ()
 renderWave = do
   sec <- liftIO elapsedSecFromStart
-  _ <- renderText (CairoPosition 0) (CairoPosition $ toDouble windowHeight - waveSize) waveSize $ replicate (round sec) '>'
+  let ws = waveSize gCfg
+      ch = toDouble $ canvasH gCfg
+  _ <- renderText (CairoPosition 0) (CairoPosition $ ch - ws) ws $ replicate (round sec) '>'
   return ()
 
 renderTurtle :: Double -> C.Render ()
 renderTurtle progress =
-  renderPngSize (turtleSize / 2 + (toDouble windowWidth - turtleSize - turtleSize) * progress) (toDouble windowHeight - turtleSize) turtleSize turtleSize 1 "turtle.png"
+  renderPngSize (ts / 2 + (cw - ts * 2) * progress) (ch - ts) ts ts 1 "turtle.png"
+    where ts = turtleSize gCfg
+          cw = toDouble $ canvasW gCfg
+          ch = toDouble $ canvasH gCfg
 
 splitBlocks :: P.Pandoc -> [[P.Block]]
 splitBlocks (P.Pandoc _ blocks) = go blocks
@@ -198,7 +222,9 @@ renderSlide :: Int -> Int -> Int -> C.Render ()
 renderSlide p w h = do
   s <- queryCarettahState slides
   clearCanvas w h
-  C.scale (toDouble w / toDouble windowWidth) (toDouble h / toDouble windowHeight)
+  let cw = toDouble $ canvasW gCfg
+      ch = toDouble $ canvasH gCfg
+  C.scale (toDouble w / cw) (toDouble h / ch)
   sequence_ (s !! p)
   renderWave
   renderTurtle $ toDouble p / toDouble (length s - 1)
@@ -207,29 +233,40 @@ renderSlide p w h = do
 blockToSlide :: [P.Block] -> [C.Render ()]
 blockToSlide blockss = map go blockss
   where
+    ag = alphaBackG gCfg
+    tty = textTitleY gCfg
+    tts = textTitleSize gCfg
+    tcx = textContextX gCfg
+    tcy = textContextY gCfg
+    tcs = textContextSize gCfg
     go (P.Para [P.Image [P.Str "background"] (pngfile, _)]) =
-      renderPngFit pngFitAlpha pngfile
+      renderPngFit ag pngfile
     go (P.Header 1 strs) =
-      renderText CairoCenter (CairoPosition textTitleY) textTitleSize (inlinesToString strs) >> return ()
-    go (P.BulletList plains) = go'' textContextY $ map go' plains
+      renderText CairoCenter (CairoPosition tty) tts (inlinesToString strs) >> return ()
+    go (P.BulletList plains) = go'' tcy $ map go' plains
       where
         go'' _ [] = return ()
         go'' ypos (x:xs) = x ypos >>= (`go''` xs)
-        go' [P.Plain strs] = renderTextNextline textContextX textContextSize ("☆ " ++ inlinesToString strs)
+        go' [P.Plain strs] = renderTextNextline tcx tcs ("☆ " ++ inlinesToString strs)
         go' x = error $ show x -- 一部のみをサポート
     go (P.Para strs) =
-      renderText (CairoPosition textContextX) (CairoPosition textContextY) textContextSize (inlinesToString strs) >> return ()
+      renderText (CairoPosition tcx) (CairoPosition tcy) tcs (inlinesToString strs) >> return ()
     go x = error $ show x -- 一部のみをサポート
 
 -- スライド表紙をRender
 coverSlide :: [P.Block] -> [C.Render ()]
 coverSlide blocks = map go blocks
   where
+    ag = alphaBackG gCfg
+    ttcy = textTitleCoverY gCfg
+    ttcs = textTitleCoverSize gCfg
+    tccy = textContextCoverY gCfg
+    tccs = textContextCoverSize gCfg
     go (P.Para [P.Image [P.Str "background"] (pngfile, _)]) =
-      renderPngFit pngFitAlpha pngfile
+      renderPngFit ag pngfile
     go (P.Header 1 strs) =
-      renderText CairoCenter (CairoPosition textTitleCoverY) textTitleCoverSize (inlinesToString strs) >> return ()
-    go (P.Para strs) = renderText CairoCenter (CairoPosition textContextCoverY) textContextCoverSize (inlinesToString strs) >> return ()
+      renderText CairoCenter (CairoPosition ttcy) ttcs (inlinesToString strs) >> return ()
+    go (P.Para strs) = renderText CairoCenter (CairoPosition tccy) tccs (inlinesToString strs) >> return ()
     go x = error $ show x -- 一部のみをサポート
 
 updateCanvas :: G.DrawingArea -> IO ()
@@ -255,7 +292,7 @@ main = do
   _ <- G.initGUI
   window <- G.windowNew
   canvas <- G.drawingAreaNew
-  G.widgetSetSizeRequest window windowWidth windowHeight
+  G.widgetSetSizeRequest window (canvasW gCfg) (canvasH gCfg)
   -- key event
   _ <- window `G.on` G.keyPressEvent $ G.tryEvent $ do
     keyName <- G.eventKeyName
