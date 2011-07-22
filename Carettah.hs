@@ -13,6 +13,11 @@ import qualified Graphics.UI.Gtk as G
 import qualified Graphics.Rendering.Cairo as C
 import qualified Text.Pandoc as P
 
+data CairoPosition = CairoPosition Double | CairoCenter
+                   deriving Show
+data CairoSize = CairoSize Double | CairoFit
+                   deriving Show
+
 markdown :: String -> P.Pandoc
 markdown = P.readMarkdown P.defaultParserState{ P.stateStandalone = True }
 
@@ -87,11 +92,21 @@ mySetFontSize fsize = do
   C.selectFontFace (toUTF "Takao P明朝") C.FontSlantNormal C.FontWeightNormal
   C.setFontSize fsize
 
-renderText :: Double -> Double -> Double -> String -> C.Render ()
+renderText :: CairoPosition -> CairoPosition -> Double -> String -> C.Render ()
 renderText x y fsize text = do
+  let truePosition (CairoPosition x') (CairoPosition y') = return (x', y')
+      truePosition CairoCenter (CairoPosition y') = do
+          C.save
+          mySetFontSize fsize
+          (C.TextExtents _ _ w _ _ _) <- C.textExtents (toUTF text)
+          C.restore
+          return (toDouble windowWidth / 2 - w / 2, y')
+      truePosition x' y' =
+        error $ "called with x=" ++ show x' ++ " y=" ++ show y'
+  (xt, yt) <- truePosition x y
   C.save
   mySetFontSize fsize
-  C.moveTo x y
+  C.moveTo xt yt
   C.textPath $ toUTF text
   C.fill >> C.stroke >> C.restore
 
@@ -103,16 +118,8 @@ renderTextNextline x fsize text ypos = do
   (C.TextExtents _ _ _ h _ _) <- C.textExtents (toUTF text)
   C.restore
   let nypos = ypos + (h * 1.4)
-  renderText x nypos fsize text
+  renderText (CairoPosition x) (CairoPosition nypos) fsize text
   return nypos
-
-renderTextCenter :: Double -> Double -> String -> C.Render ()
-renderTextCenter y fsize text = do
-  C.save
-  mySetFontSize fsize
-  (C.TextExtents _ _ w _ _ _) <- C.textExtents (toUTF text)
-  C.restore
-  renderText (toDouble windowWidth / 2 - w / 2) y fsize text
 
 renderSurface :: Double -> Double -> Double -> C.Surface -> C.Render ()
 renderSurface x y alpha surface = do
@@ -164,7 +171,7 @@ elapsedSecFromStart = do
 renderWave :: C.Render ()
 renderWave = do
   sec <- liftIO elapsedSecFromStart
-  renderText 0 470 20 $ replicate (round sec) '>'
+  renderText (CairoPosition 0) (CairoPosition 470) 20 $ replicate (round sec) '>'
 
 renderTurtle :: Double -> C.Render ()
 renderTurtle progress =
@@ -205,7 +212,7 @@ blockToSlide blockss = map go blockss
     go (P.Para [P.Image [P.Str "background"] (pngfile, _)]) =
       renderPngFit pngFitAlpha pngfile
     go (P.Header 1 strs) =
-      renderTextCenter textTitleY textTitleSize (inlinesToString strs)
+      renderText CairoCenter (CairoPosition textTitleY) textTitleSize (inlinesToString strs)
     go (P.BulletList plains) = go'' textContextY $ map go' plains
       where
         go'' _ [] = return ()
@@ -223,8 +230,8 @@ coverSlide blocks = map go blocks
     go (P.Para [P.Image [P.Str "background"] (pngfile, _)]) =
       renderPngFit pngFitAlpha pngfile
     go (P.Header 1 strs) =
-      renderTextCenter textTitleCoverY textTitleCoverSize (inlinesToString strs)
-    go (P.Para strs) = renderTextCenter textContextCoverY textContextCoverSize (inlinesToString strs)
+      renderText CairoCenter (CairoPosition textTitleCoverY) textTitleCoverSize (inlinesToString strs)
+    go (P.Para strs) = renderText CairoCenter (CairoPosition textContextCoverY) textContextCoverSize (inlinesToString strs)
     go x = error $ show x -- 一部のみをサポート
 
 updateCanvas :: G.DrawingArea -> IO ()
