@@ -12,6 +12,7 @@ import Control.Monad.Reader
 import qualified Graphics.UI.Gtk as G
 import qualified Graphics.Rendering.Cairo as C
 import qualified Text.Pandoc as P
+import System.CWiid
 
 data CairoPosition = CairoPosition Double | CairoCenter
                    deriving Show
@@ -25,11 +26,13 @@ markdown = P.readMarkdown P.defaultParserState{ P.stateStandalone = True }
 data CarettahState = CarettahState {
   page :: Int,
   slides :: [[Double -> C.Render Double]],
-  startTime :: UTCTime
+  startTime :: UTCTime,
+  wiiHandle :: CWiidWiimote,
+  wiiBtnFlag :: CWiidBtnFlag
   }
 
 carettahState :: IORef CarettahState
-carettahState = unsafePerformIO $ newIORef CarettahState { page = 0, slides = undefined, startTime = undefined }
+carettahState = unsafePerformIO $ newIORef CarettahState { page = 0, slides = undefined, startTime = undefined, wiiHandle = undefined, wiiBtnFlag = CWiidBtnFlag 0 }
 
 updateCarettahState :: MonadIO m => (CarettahState -> CarettahState) -> m ()
 updateCarettahState fn = liftIO $! atomicModifyIORef carettahState $ \st -> (fn st, ())
@@ -53,6 +56,16 @@ updateStartTime :: IO ()
 updateStartTime = do
   t <- getCurrentTime
   updateCarettahState (\s -> s { startTime = t })
+
+setWiiHandle :: MonadIO m => CWiidWiimote -> m ()
+setWiiHandle wm = updateCarettahState (\s -> s { wiiHandle = wm })
+
+updateWiiBtnFlag :: IO CWiidBtnFlag
+updateWiiBtnFlag = do
+  wm <- queryCarettahState wiiHandle
+  bs <- cwiidGetBtnState wm
+  updateCarettahState (\s -> s { wiiBtnFlag = bs })
+  return bs
 
 -- constant value
 data Config = Config {
@@ -292,7 +305,6 @@ updateCanvas canvas = do
 
 main :: IO ()
 main = do
-  updateStartTime
   -- parse markdown
   args <- getArgs
   s <- case args of
@@ -300,6 +312,13 @@ main = do
     _     -> error "*** Need markdown filename."
   let z = zip (coverSlide:repeat blockToSlide) (splitBlocks $ markdown s)
     in updateSlides $ const $ map (\p -> fst p . backgroundTop $ snd p) z
+  -- setup wiimote
+  putStrLn "Put Wiimote in discoverable mode now (press 1+2)..."
+  wm <- cwiidOpen
+  putStrLn "found!"
+  _ <- cwiidSetRptMode wm
+  _ <- cwiidSetLed wm
+  setWiiHandle wm
   -- start GUI
   _ <- G.initGUI
   window <- G.windowNew
@@ -319,7 +338,18 @@ main = do
         _   -> return ()
   _ <- G.onDestroy window G.mainQuit
   _ <- G.onExpose canvas $ const (updateCanvas canvas >> return True)
-  _ <- G.timeoutAdd (G.widgetQueueDraw canvas >> return True) 100 -- msec
+  _ <- G.timeoutAdd (do bf <- queryCarettahState wiiBtnFlag
+                        af <- updateWiiBtnFlag
+                        let bs = af `diffCwiidBtnFlag` bf
+                            go b | b == cwiidBtnA = nextPage
+                                 | b == cwiidBtnB = prevPage
+                                 | b == cwiidBtnPlus = G.windowFullscreen window
+                                 | b == cwiidBtnMinus = G.windowUnfullscreen window
+                                 | otherwise = return ()
+                        go bs
+                        G.widgetQueueDraw canvas
+                        return True) 100 -- msec
   G.set window [G.containerChild G.:= canvas]
   G.widgetShowAll window
+  updateStartTime
   G.mainGUI
