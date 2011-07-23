@@ -1,5 +1,5 @@
 * ">"の波を発表時間に合わせる
 * highlightPangoLayoutを作ってshowLayoutでソースコードを色付き表示 (参考: gtk2hs/cairo/demo/Drawing.hs)
-* Wiiリモコン対応
 * markdown内コード実行
 * PDF出力
+* インライン画像表示
