@@ -23,16 +23,17 @@ markdown :: String -> P.Pandoc
 markdown = P.readMarkdown P.defaultParserState{ P.stateStandalone = True }
 
 -- global value
+data WiiHandle = NoWiiHandle | WiiHandle CWiidWiimote
 data CarettahState = CarettahState {
   page :: Int,
   slides :: [[Double -> C.Render Double]],
   startTime :: UTCTime,
-  wiiHandle :: CWiidWiimote,
+  wiiHandle :: WiiHandle,
   wiiBtnFlag :: CWiidBtnFlag
   }
 
 carettahState :: IORef CarettahState
-carettahState = unsafePerformIO $ newIORef CarettahState { page = 0, slides = undefined, startTime = undefined, wiiHandle = undefined, wiiBtnFlag = CWiidBtnFlag 0 }
+carettahState = unsafePerformIO $ newIORef CarettahState { page = 0, slides = undefined, startTime = undefined, wiiHandle = NoWiiHandle, wiiBtnFlag = CWiidBtnFlag 0 }
 
 updateCarettahState :: MonadIO m => (CarettahState -> CarettahState) -> m ()
 updateCarettahState fn = liftIO $! atomicModifyIORef carettahState $ \st -> (fn st, ())
@@ -43,11 +44,14 @@ queryCarettahState fn = liftM fn $ liftIO $! readIORef carettahState
 updatePage :: MonadIO m => (Int -> Int) -> m ()
 updatePage fn = updateCarettahState (\s -> s { page = fn $ page s })
 
-nextPage, prevPage :: MonadIO m => m ()
+nextPage, prevPage, topPage, endPage :: MonadIO m => m ()
 nextPage = do s <- queryCarettahState slides
               let maxpage = length s - 1
               updatePage (\p -> if p >= maxpage then maxpage else p + 1)
 prevPage = updatePage (\p -> if p == 0 then 0 else p - 1)
+topPage = updatePage $ const 0
+endPage = do s <- queryCarettahState slides
+             updatePage $ const (length s - 1)
 
 updateSlides :: MonadIO m => ([[Double -> C.Render Double]] -> [[Double -> C.Render Double]]) -> m ()
 updateSlides fn = updateCarettahState (\s -> s { slides = fn $ slides s })
@@ -57,15 +61,26 @@ updateStartTime = do
   t <- getCurrentTime
   updateCarettahState (\s -> s { startTime = t })
 
-setWiiHandle :: MonadIO m => CWiidWiimote -> m ()
-setWiiHandle wm = updateCarettahState (\s -> s { wiiHandle = wm })
+setWiiHandle :: Bool -> IO ()
+setWiiHandle won
+  | won = do
+    putStrLn "Put Wiimote in discoverable mode now (press 1+2)..."
+    wm <- cwiidOpen
+    putStrLn "found!"
+    _ <- cwiidSetRptMode wm
+    _ <- cwiidSetLed wm
+    updateCarettahState (\s -> s { wiiHandle = WiiHandle wm })
+  | otherwise = return ()
 
 updateWiiBtnFlag :: IO CWiidBtnFlag
 updateWiiBtnFlag = do
-  wm <- queryCarettahState wiiHandle
-  bs <- cwiidGetBtnState wm
-  updateCarettahState (\s -> s { wiiBtnFlag = bs })
-  return bs
+  wh <- queryCarettahState wiiHandle
+  let go NoWiiHandle = return $ CWiidBtnFlag 0
+      go (WiiHandle wm) = do
+        bs <- cwiidGetBtnState wm
+        updateCarettahState (\s -> s { wiiBtnFlag = bs })
+        return bs
+  go wh
 
 -- constant value
 data Config = Config {
@@ -303,22 +318,23 @@ updateCanvas canvas = do
     renderSlide n width height
   performGC
 
+parseArgs :: [String] -> (Bool, String)
+parseArgs args = case args of
+  ["-w"] -> error "*** Need markdown filename."
+  ("-w":xs) -> (True, head xs)
+  (x:_) -> (False, x)
+  _     -> error "*** Need markdown filename."
+
 main :: IO ()
 main = do
   -- parse markdown
   args <- getArgs
-  s <- case args of
-    (x:_) -> readFile x
-    _     -> error "*** Need markdown filename."
+  let (wiiOn, filen) = parseArgs args
+  s <- readFile filen
   let z = zip (coverSlide:repeat blockToSlide) (splitBlocks $ markdown s)
     in updateSlides $ const $ map (\p -> fst p . backgroundTop $ snd p) z
   -- setup wiimote
-  putStrLn "Put Wiimote in discoverable mode now (press 1+2)..."
-  wm <- cwiidOpen
-  putStrLn "found!"
-  _ <- cwiidSetRptMode wm
-  _ <- cwiidSetLed wm
-  setWiiHandle wm
+  setWiiHandle wiiOn
   -- start GUI
   _ <- G.initGUI
   window <- G.windowNew
@@ -343,6 +359,8 @@ main = do
                         let bs = af `diffCwiidBtnFlag` bf
                             go b | b == cwiidBtnA = nextPage
                                  | b == cwiidBtnB = prevPage
+                                 | b == cwiidBtnUp = topPage
+                                 | b == cwiidBtnDown = endPage
                                  | b == cwiidBtnPlus = G.windowFullscreen window
                                  | b == cwiidBtnMinus = G.windowUnfullscreen window
                                  | otherwise = return ()
