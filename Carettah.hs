@@ -188,6 +188,25 @@ renderPngSize x y w h alpha file = do
   C.restore
   return $ y + h
 
+renderPngInline :: CairoPosition -> CairoPosition -> CairoSize -> CairoSize -> Double -> FilePath -> C.Render Double
+renderPngInline CairoCenter (CairoPosition y) CairoFit CairoFit alpha file = do
+  C.save
+  (surface, iw, ih) <- pngSurfaceSize file
+  let diw = toDouble iw
+      dih = toDouble ih
+      cw = toDouble (canvasW gCfg)
+      ch = toDouble (canvasH gCfg)
+      iratio = diw / dih
+      sratio = cw / ch
+      scale = if iratio > sratio then dih / ch * 0.9 else diw / cw * 0.9
+      tiw = diw * scale
+      tih = tih * scale
+  C.scale scale scale
+  renderSurface ((cw / 2 - tiw / 2) / scale) (y / scale) alpha surface
+  C.restore
+  return $ y + tih
+renderPngInline _ _ _ _ _ _ = return 0 -- xxx renerPngFit統合して一関数にすべき
+
 renderPngFit :: Double -> FilePath -> C.Render ()
 renderPngFit alpha file = do
   C.save
@@ -277,6 +296,9 @@ blockToSlide blockss = map go blockss
     go :: P.Block -> Double -> C.Render Double
     go (P.Para [P.Image [P.Str "background"] (pngfile, _)]) =
       \y -> renderPngFit ag pngfile >> return y
+    go (P.Para [P.Image [P.Str "inline"] (pngfile, _)]) =
+      \y -> renderPngInline CairoCenter (CairoPosition y) CairoFit
+            CairoFit 1 pngfile
     go (P.Header 1 strs) =
       \y -> renderText CairoCenter (CairoPosition tty) tts (inlinesToString strs) >> return y
     go (P.BulletList plains) = \y -> yposSequence y $ map go' plains

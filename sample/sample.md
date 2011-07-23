@@ -49,9 +49,7 @@ https://gitorious.org/carettah ← コレ
 
 # こんなん作ってみました
 
-画像で説明セヨ!!!!!!!!!!!!!!
-
-![head](hammer.png)
+![inline](hammer.png)
 
 # 使い方: プレゼンテキスト書式
 
