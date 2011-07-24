@@ -28,12 +28,13 @@ data CarettahState = CarettahState {
   page :: Int,
   slides :: [[Double -> C.Render Double]],
   startTime :: UTCTime,
+  renderdTime :: UTCTime,
   wiiHandle :: WiiHandle,
   wiiBtnFlag :: CWiidBtnFlag
   }
 
 carettahState :: IORef CarettahState
-carettahState = unsafePerformIO $ newIORef CarettahState { page = 0, slides = undefined, startTime = undefined, wiiHandle = NoWiiHandle, wiiBtnFlag = CWiidBtnFlag 0 }
+carettahState = unsafePerformIO $ newIORef CarettahState { page = 0, slides = undefined, startTime = undefined, renderdTime = undefined, wiiHandle = NoWiiHandle, wiiBtnFlag = CWiidBtnFlag 0 }
 
 updateCarettahState :: MonadIO m => (CarettahState -> CarettahState) -> m ()
 updateCarettahState fn = liftIO $! atomicModifyIORef carettahState $ \st -> (fn st, ())
@@ -60,6 +61,11 @@ updateStartTime :: IO ()
 updateStartTime = do
   t <- getCurrentTime
   updateCarettahState (\s -> s { startTime = t })
+
+updateRenderdTime :: IO ()
+updateRenderdTime = do
+  t <- getCurrentTime
+  updateCarettahState (\s -> s { renderdTime = t })
 
 setWiiHandle :: Bool -> IO ()
 setWiiHandle won
@@ -345,6 +351,7 @@ updateCanvas canvas = do
   (width, height) <- G.widgetGetSize canvas
   G.renderWithDrawable win $
     renderSlide n width height
+  updateRenderdTime
   performGC
 
 parseArgs :: [String] -> (Bool, String)
@@ -383,20 +390,27 @@ main = do
         _   -> return ()
   _ <- G.onDestroy window G.mainQuit
   _ <- G.onExpose canvas $ const (updateCanvas canvas >> return True)
-  _ <- G.timeoutAdd (do bf <- queryCarettahState wiiBtnFlag
-                        af <- updateWiiBtnFlag
-                        let bs = af `diffCwiidBtnFlag` bf
-                            go b | b == cwiidBtnA = nextPage
-                                 | b == cwiidBtnB = prevPage
-                                 | b == cwiidBtnUp = topPage
-                                 | b == cwiidBtnDown = endPage
-                                 | b == cwiidBtnPlus = G.windowFullscreen window
-                                 | b == cwiidBtnMinus = G.windowUnfullscreen window
-                                 | otherwise = return ()
-                        go bs
-                        G.widgetQueueDraw canvas
-                        return True) 300 -- msec 画面再描画は1秒毎でOK
+  _ <- G.timeoutAdd (do rtime <- queryCarettahState renderdTime
+                        ntime <- getCurrentTime
+                        let dtime :: Double
+                            dtime = (fromRational . toRational) $
+                                    diffUTCTime ntime rtime
+                        if dtime < 2 then return True else do
+                          bf <- queryCarettahState wiiBtnFlag
+                          af <- updateWiiBtnFlag
+                          let bs = af `diffCwiidBtnFlag` bf
+                              go b | b == cwiidBtnA = nextPage
+                                   | b == cwiidBtnB = prevPage
+                                   | b == cwiidBtnUp = topPage
+                                   | b == cwiidBtnDown = endPage
+                                   | b == cwiidBtnPlus = G.windowFullscreen window
+                                   | b == cwiidBtnMinus = G.windowUnfullscreen window
+                                   | otherwise = return ()
+                          go bs
+                          G.widgetQueueDraw canvas
+                          return True) 50
   G.set window [G.containerChild G.:= canvas]
   G.widgetShowAll window
   updateStartTime
+  updateRenderdTime
   G.mainGUI
