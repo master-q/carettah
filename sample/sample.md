@@ -10,7 +10,7 @@ Kiwamu Okabe
 
 * twitter: http://twitter/master_q
 * 職業: コピペプログラマ
-* ふだんはDebian使い
+* CとRubyなら使えますが。。。
 * Haskellは本腰入れて勉強しはじめて半年
 
 # 「Haskell」への周囲の反応
@@ -84,26 +84,71 @@ $ ./carettah sample.md
 
 # gtk2hsの使い方
 
+![background](realworldhaskell.png)
+
 「Real World Haskell」を買ってください!
 
 # cairoとは
 
-xxxxxxxxxxxxx gtkのアーキティクチャ図
+![inline](gnome.png)
 
-# cairoの使い方
+# cairoの使い方: 初期化
 
+~~~ { .haskell }
+window <- windowNew
+canvas <- drawingAreaNew
+widgetSetSizeRequest window 640 480
+onExpose canvas $ const 描画関数
+_ <- window `on` keyPressEvent $ tryEvent $ do
+  keyName <- G.eventKeyName
+  liftIO $ case keyName of
+             "j" -> nextPage >> G.widgetQueueDraw canvas
+set window [G.containerChild G.:= canvas]
+mainGUI
+~~~
 
+# cairoの使い方: 描画
+
+PostScriptみたいな感じです。
+
+~~~ { .haskell }
+renderHoge :: Render ()
+renderHoge = do
+  save
+  (surface, w, h) <- pngSurfaceSize "hoge.png"
+  setSourceSurface surface 0 0
+  paintWithAlpha 0.5
+  restore
+~~~
 
 # cairo使うときのハマりポイント
 
 * 画面再描画する場合はExposeイベントで
 * ↑すればダブルバッファリングは自動実行
 * Renderモナド内ではPSっぽい状態がある
-* ↑の状態はcanvasが保存してるわけではない
+* ↑の状態はcanvasで保存してるんじゃない
+* utf8文字列を送るときはtoUTF関数を通す 
 
 # pandoc抽象について
 
+~~~ { .haskell }
+readMarkdown :: ParserState -> String -> Pandoc
+~~~
+
+って関数にmarkdownなテキストを食わせる
+
+~~~ { .haskell }
+ghci> readMarkdown defaultParserState "# title\n* item"
+Pandoc (Meta {docTitle = [], docAuthors = [], docDate = []})
+[Header 1 [Str "title"],
+ BulletList [[Plain [Str "item"]]]]
+~~~
+
+後はPandoc側を好きな具象に落せばOK
+
 # 宣伝: HaskellやるならDebian!
+
+![background](debian.png)
 
 * Haskell関連パッケージが充実
 * apt-cache search libghc- | wc -l #>872
@@ -111,6 +156,8 @@ xxxxxxxxxxxxx gtkのアーキティクチャ図
 * yesodもパッケージになってるよ!
 
 # 宣伝: 「初心者Haskell勉強会」
+
+![background](haskellstudy.png)
 
 * レベル: 「プログラミングHaskell」一読
 * 日時: 隔週日曜日13時開始
