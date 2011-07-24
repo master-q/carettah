@@ -395,19 +395,19 @@ main = do
                         let dtime :: Double
                             dtime = (fromRational . toRational) $
                                     diffUTCTime ntime rtime
-                        if dtime < 2 then return True else do
+                        if dtime > 2 then G.widgetQueueDraw canvas >>
+                                          return True else do
                           bf <- queryCarettahState wiiBtnFlag
                           af <- updateWiiBtnFlag
                           let bs = af `diffCwiidBtnFlag` bf
-                              go b | b == cwiidBtnA = nextPage
-                                   | b == cwiidBtnB = prevPage
-                                   | b == cwiidBtnUp = topPage
-                                   | b == cwiidBtnDown = endPage
+                              go b | b == cwiidBtnA = nextPage >> G.widgetQueueDraw canvas
+                                   | b == cwiidBtnB = prevPage >> G.widgetQueueDraw canvas
+                                   | b == cwiidBtnUp = topPage >> G.widgetQueueDraw canvas
+                                   | b == cwiidBtnDown = endPage >> G.widgetQueueDraw canvas
                                    | b == cwiidBtnPlus = G.windowFullscreen window
                                    | b == cwiidBtnMinus = G.windowUnfullscreen window
                                    | otherwise = return ()
                           go bs
-                          G.widgetQueueDraw canvas
                           return True) 50
   G.set window [G.containerChild G.:= canvas]
   G.widgetShowAll window
