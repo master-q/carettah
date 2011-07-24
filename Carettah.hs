@@ -100,7 +100,9 @@ data Config = Config {
   textCodeBlockSize :: Double,
   textCodeBlockOfs :: Double,
   turtleSize :: Double,
-  waveSize :: Double
+  waveSize :: Double,
+  waveCharMax :: Double,
+  speechMinutes :: Double
   }
 gCfg :: Config
 gCfg = Config {
@@ -119,7 +121,9 @@ gCfg = Config {
   textCodeBlockSize = 20,
   textCodeBlockOfs = 20,
   turtleSize = 40,
-  waveSize = 20
+  waveSize = 20,
+  waveCharMax = 53, -- xxxxxx 本来はwaveSizeから検出すべき手で数えんなよwwww
+  speechMinutes = 14 -- xxxxx for 第0回 スタートHaskell
   }
 
 toDouble :: Integral a => a -> Double
@@ -237,7 +241,10 @@ renderWave = do
   sec <- liftIO elapsedSecFromStart
   let ws = waveSize gCfg
       ch = toDouble $ canvasH gCfg
-  _ <- renderText (CairoPosition 0) (CairoPosition $ ch - ws) ws $ replicate (round sec) '>'
+      speechSec = 60 * speechMinutes gCfg
+      charMax = waveCharMax gCfg
+      numChar = round $ charMax * sec / speechSec
+  _ <- renderText (CairoPosition 0) (CairoPosition $ ch - ws) ws $ replicate numChar '>'
   return ()
 
 renderTurtle :: Double -> C.Render ()
@@ -388,7 +395,7 @@ main = do
                                  | otherwise = return ()
                         go bs
                         G.widgetQueueDraw canvas
-                        return True) 100 -- msec
+                        return True) 300 -- msec 画面再描画は1秒毎でOK
   G.set window [G.containerChild G.:= canvas]
   G.widgetShowAll window
   updateStartTime
