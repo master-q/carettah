@@ -47,10 +47,6 @@ Kiwamu Okabe
 
 https://gitorious.org/carettah ← コレ
 
-# こんなん作ってみました
-
-![inline](hammer.png)
-
 # 使い方: プレゼンテキスト書式
 
 ![background](editors.png)
@@ -81,3 +77,44 @@ $ ./carettah sample.md
 ~~~
 
 すればプレゼン開始。
+
+# モジュール構成
+
+![inline](draw_arch.png)
+
+# gtk2hsの使い方
+
+「Real World Haskell」を買ってください!
+
+# cairoとは
+
+xxxxxxxxxxxxx gtkのアーキティクチャ図
+
+# cairoの使い方
+
+
+
+# cairo使うときのハマりポイント
+
+* 画面再描画する場合はExposeイベントで
+* ↑すればダブルバッファリングは自動実行
+* Renderモナド内ではPSっぽい状態がある
+* ↑の状態はcanvasが保存してるわけではない
+
+# pandoc抽象について
+
+# 宣伝: HaskellやるならDebian!
+
+* Haskell関連パッケージが充実
+* apt-cache search libghc- | wc -l #>872
+* gtk2hsやcairoもcabal不要ですぐ使えます
+* yesodもパッケージになってるよ!
+
+# 宣伝: 「初心者Haskell勉強会」
+
+* レベル: 「プログラミングHaskell」一読
+* 日時: 隔週日曜日13時開始
+* 場所: 大森 (ニフティさん場所貸して!)
+* 内容1: 宿題答えあわせ
+* 内容2: 持ち回りでLT
+* 2011年8月下旬から再開予定
