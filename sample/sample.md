@@ -94,6 +94,8 @@ $ ./carettah sample.md
 
 # cairoの使い方: 初期化
 
+![background](takeoff.png)
+
 ~~~ { .haskell }
 window <- windowNew
 canvas <- drawingAreaNew
@@ -109,6 +111,8 @@ mainGUI
 
 # cairoの使い方: 描画
 
+![background](ghostscript.png)
+
 PostScriptみたいな感じです。
 
 ~~~ { .haskell }
@@ -123,6 +127,8 @@ renderHoge = do
 
 # cairo使うときのハマりポイント
 
+![background](crash.png)
+
 * 画面再描画する場合はExposeイベントで
 * ↑すればダブルバッファリングは自動実行
 * Renderモナド内ではPSっぽい状態がある
@@ -130,6 +136,8 @@ renderHoge = do
 * utf8文字列を送るときはtoUTF関数を通す 
 
 # pandoc抽象について
+
+![background](document.png)
 
 ~~~ { .haskell }
 readMarkdown :: ParserState -> String -> Pandoc
@@ -159,7 +167,7 @@ Pandoc (Meta {docTitle = [], docAuthors = [], docDate = []})
 
 ![background](haskellstudy.png)
 
-* レベル: 「プログラミングHaskell」一読
+* レベル: "プログラミングHaskell"読了した人
 * 日時: 隔週日曜日13時開始
 * 場所: 大森 (ニフティさん場所貸して!)
 * 内容1: 宿題答えあわせ
