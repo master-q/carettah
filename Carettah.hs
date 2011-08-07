@@ -5,6 +5,7 @@ import Data.Char
 import Data.Bits
 import Data.IORef
 import Data.Time
+import Data.Maybe
 import System.IO.Unsafe (unsafePerformIO)
 import Control.Monad.Reader
 --import Control.Monad.State
@@ -13,6 +14,7 @@ import qualified Graphics.UI.Gtk as G
 import qualified Graphics.Rendering.Cairo as C
 import qualified Text.Pandoc as P
 import System.CWiid
+import System.Console.GetOpt
 
 data CairoPosition = CairoPosition Double | CairoCenter
                    deriving Show
@@ -23,6 +25,15 @@ markdown :: String -> P.Pandoc
 markdown = P.readMarkdown P.defaultParserState{ P.stateStandalone = True }
 
 -- global value
+data Options = Options { optWiimote   :: Bool
+                       , optPdfOutput :: Maybe FilePath
+                       } deriving Show
+
+defaultOptions :: Options
+defaultOptions = Options { optWiimote   = False
+                         , optPdfOutput = Nothing
+                         }
+
 data WiiHandle = NoWiiHandle | WiiHandle CWiidWiimote
 data CarettahState = CarettahState {
   page :: Int,
@@ -354,18 +365,33 @@ updateCanvas canvas = do
   updateRenderdTime
   performGC
 
-parseArgs :: [String] -> (Bool, String)
-parseArgs args = case args of
-  ["-w"] -> error "*** Need markdown filename."
-  ("-w":xs) -> (True, head xs)
-  (x:_) -> (False, x)
-  _     -> error "*** Need markdown filename."
+options :: [OptDescr (Options -> Options)]
+options =
+  [ Option "w"     ["wiimote"]
+    (NoArg (\ opts -> opts { optWiimote = True }))
+    "use wiimote"
+  , Option "o"     ["output-filename"]
+    (OptArg ((\ f opts -> opts { optPdfOutput = Just f }) . fromMaybe "output.pdf")
+     "FILE")
+    "output PDF_FILE"
+  ]
+
+compilerOpts :: [String] -> IO (Options, [String])
+compilerOpts argv =
+  let header = "Usage: carettah [OPTION...] FILE"
+  in case getOpt Permute options argv of
+    (_,[],[] ) -> error $ usageInfo header options
+    (o,n,[]  ) -> return (foldl (flip id) defaultOptions o, n)
+    (_,_,errs) -> error (concat errs ++ usageInfo header options)
 
 main :: IO ()
 main = do
+  -- opts
+  (Options {optWiimote = wiiOn, optPdfOutput = pdfFilen}, filen:_) <-
+    compilerOpts =<< getArgs
+--  print $ "wii " ++ (show wiiOn)
+--  print $ "pdf " ++ (show pdfFilen)
   -- parse markdown
-  args <- getArgs
-  let (wiiOn, filen) = parseArgs args
   s <- readFile filen
   let z = zip (coverSlide:repeat blockToSlide) (splitBlocks $ markdown s)
     in updateSlides $ const $ map (\p -> fst p . backgroundTop $ snd p) z
