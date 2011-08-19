@@ -400,21 +400,8 @@ outputPDF pdf = do
     (flip C.renderWith $ sequence_ $ fmap (\a -> renderSlideFilter iw ih a >> C.showPage) s)
   exitSuccess
 
-main :: IO ()
-main = do
-  -- init
-  updateStartTime
-  updateRenderdTime
-  -- opts
-  (Options {optWiimote = wiiOn, optPdfOutput = pdfFilen}, filen:_) <-
-    compilerOpts =<< getArgs
-  -- parse markdown
-  s <- readFile filen
-  let z = zip (coverSlide:repeat blockToSlide) (splitBlocks $ markdown s)
-    in updateSlides $ const $ map (\p -> fst p . backgroundTop $ snd p) z
-  case pdfFilen of
-    Just pdf -> outputPDF pdf
-    Nothing -> print "hoge" -- xxx 以下の処理を関数化すべき
+startPresentation :: Bool -> IO ()
+startPresentation wiiOn = do
   -- setup wiimote
   setWiiHandle wiiOn
   -- start GUI
@@ -460,3 +447,19 @@ main = do
   updateStartTime
   updateRenderdTime
   G.mainGUI
+
+main :: IO ()
+main = do
+  -- init
+  updateStartTime
+  updateRenderdTime
+  -- opts
+  (Options {optWiimote = wiiOn, optPdfOutput = pdfFilen}, filen:_) <-
+    compilerOpts =<< getArgs
+  -- parse markdown
+  s <- readFile filen
+  let z = zip (coverSlide:repeat blockToSlide) (splitBlocks $ markdown s)
+    in updateSlides $ const $ map (\p -> fst p . backgroundTop $ snd p) z
+  case pdfFilen of
+    Just pdf -> outputPDF pdf
+    Nothing  -> startPresentation wiiOn
