@@ -1,6 +1,7 @@
 module Main where
 import System
 import System.Mem
+import System.Exit
 import Data.Char
 import Data.Bits
 import Data.IORef
@@ -294,16 +295,20 @@ yposSequence :: Double -> [Double -> C.Render Double] -> C.Render Double
 yposSequence ypos (x:xs) = x ypos >>= (`yposSequence` xs)
 yposSequence ypos [] = return ypos
 
-renderSlide :: Int -> Int -> Int -> C.Render ()
-renderSlide p w h = do
-  s <- queryCarettahState slides
+renderSlideFilter :: Int -> Int -> [Double -> C.Render Double] -> C.Render ()
+renderSlideFilter w h s = do
   clearCanvas w h
   let cw = toDouble $ canvasW gCfg
       ch = toDouble $ canvasH gCfg
       tcy = textContextY gCfg
   C.scale (toDouble w / cw) (toDouble h / ch)
-  _ <- yposSequence tcy (s !! p)
+  _ <- yposSequence tcy s
   renderWave
+
+renderSlide :: Int -> Int -> Int -> C.Render ()
+renderSlide p w h = do
+  s <- queryCarettahState slides
+  renderSlideFilter w h (s !! p)
   renderTurtle $ toDouble p / toDouble (length s - 1)
 
 -- 二枚目以降のスライドをRender
@@ -384,17 +389,32 @@ compilerOpts argv =
     (o,n,[]  ) -> return (foldl (flip id) defaultOptions o, n)
     (_,_,errs) -> error (concat errs ++ usageInfo header options)
 
+outputPDF :: String -> IO ()
+outputPDF pdf = do
+  s <- queryCarettahState slides
+  let iw = canvasW gCfg
+      ih = canvasH gCfg
+      dw = toDouble iw
+      dh = toDouble ih
+  C.withPDFSurface pdf dw dh
+    (flip C.renderWith $ sequence_ $ fmap (\a -> renderSlideFilter iw ih a >> C.showPage) s)
+  exitSuccess
+
 main :: IO ()
 main = do
+  -- init
+  updateStartTime
+  updateRenderdTime
   -- opts
   (Options {optWiimote = wiiOn, optPdfOutput = pdfFilen}, filen:_) <-
     compilerOpts =<< getArgs
---  print $ "wii " ++ (show wiiOn)
---  print $ "pdf " ++ (show pdfFilen)
   -- parse markdown
   s <- readFile filen
   let z = zip (coverSlide:repeat blockToSlide) (splitBlocks $ markdown s)
     in updateSlides $ const $ map (\p -> fst p . backgroundTop $ snd p) z
+  case pdfFilen of
+    Just pdf -> outputPDF pdf
+    Nothing -> print "hoge" -- xxx 以下の処理を関数化すべき
   -- setup wiimote
   setWiiHandle wiiOn
   -- start GUI
