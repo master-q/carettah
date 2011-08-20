@@ -3,8 +3,8 @@ all: carettah
 carettah: Carettah.hs
 	ghc --make -Wall Carettah.hs -o carettah
 
-lint: Carettah.hs
-	hlint -c Carettah.hs
+lint: Carettah.hs Config.hs Render.hs
+	hlint -c Carettah.hs Config.hs Render.hs
 
 clean:
 	rm -rf carettah
