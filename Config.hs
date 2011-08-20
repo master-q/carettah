@@ -1,0 +1,130 @@
+module Config (gCfg, defaultOptions, Config(..), Options(..), CarettahState(..),
+               nextPage, prevPage, topPage, endPage,
+               setWiiHandle, updateWiiBtnFlag,
+               updateSlides, queryCarettahState,
+               updateStartTime, updateRenderdTime) where
+
+import Data.IORef
+import Data.Time
+import System.IO.Unsafe (unsafePerformIO)
+import Control.Monad.Reader
+import qualified Graphics.Rendering.Cairo as C
+import System.CWiid
+
+data Options = Options { optWiimote   :: Bool
+                       , optPdfOutput :: Maybe FilePath
+                       } deriving Show
+
+defaultOptions :: Options
+defaultOptions = Options { optWiimote   = False
+                         , optPdfOutput = Nothing
+                         }
+
+data WiiHandle = NoWiiHandle | WiiHandle CWiidWiimote
+data CarettahState = CarettahState {
+  page :: Int,
+  slides :: [[Double -> C.Render Double]],
+  startTime :: UTCTime,
+  renderdTime :: UTCTime,
+  wiiHandle :: WiiHandle,
+  wiiBtnFlag :: CWiidBtnFlag
+  }
+
+carettahState :: IORef CarettahState
+carettahState = unsafePerformIO $ newIORef CarettahState { page = 0, slides = undefined, startTime = undefined, renderdTime = undefined, wiiHandle = NoWiiHandle, wiiBtnFlag = CWiidBtnFlag 0 }
+
+updateCarettahState :: MonadIO m => (CarettahState -> CarettahState) -> m ()
+updateCarettahState fn = liftIO $! atomicModifyIORef carettahState $ \st -> (fn st, ())
+
+queryCarettahState :: MonadIO m => (CarettahState -> a) -> m a
+queryCarettahState fn = liftM fn $ liftIO $! readIORef carettahState
+
+updatePage :: MonadIO m => (Int -> Int) -> m ()
+updatePage fn = updateCarettahState (\s -> s { page = fn $ page s })
+
+nextPage, prevPage, topPage, endPage :: MonadIO m => m ()
+nextPage = do s <- queryCarettahState slides
+              let maxpage = length s - 1
+              updatePage (\p -> if p >= maxpage then maxpage else p + 1)
+prevPage = updatePage (\p -> if p == 0 then 0 else p - 1)
+topPage = updatePage $ const 0
+endPage = do s <- queryCarettahState slides
+             updatePage $ const (length s - 1)
+
+updateSlides :: MonadIO m => ([[Double -> C.Render Double]] -> [[Double -> C.Render Double]]) -> m ()
+updateSlides fn = updateCarettahState (\s -> s { slides = fn $ slides s })
+
+updateStartTime :: IO ()
+updateStartTime = do
+  t <- getCurrentTime
+  updateCarettahState (\s -> s { startTime = t })
+
+updateRenderdTime :: IO ()
+updateRenderdTime = do
+  t <- getCurrentTime
+  updateCarettahState (\s -> s { renderdTime = t })
+
+setWiiHandle :: Bool -> IO ()
+setWiiHandle won
+  | won = do
+    putStrLn "Put Wiimote in discoverable mode now (press 1+2)..."
+    wm <- cwiidOpen
+    putStrLn "found!"
+    _ <- cwiidSetRptMode wm
+    _ <- cwiidSetLed wm
+    updateCarettahState (\s -> s { wiiHandle = WiiHandle wm })
+  | otherwise = return ()
+
+updateWiiBtnFlag :: IO CWiidBtnFlag
+updateWiiBtnFlag = do
+  wh <- queryCarettahState wiiHandle
+  let go NoWiiHandle = return $ CWiidBtnFlag 0
+      go (WiiHandle wm) = do
+        bs <- cwiidGetBtnState wm
+        updateCarettahState (\s -> s { wiiBtnFlag = bs })
+        return bs
+  go wh
+
+-- constant value
+data Config = Config {
+  --- posX,posY,fsizeの値は640x480の画面サイズが基準
+  canvasW :: Int,
+  canvasH :: Int,
+  alphaBackG :: Double,
+  textTitleY :: Double,
+  textTitleSize :: Double,
+  textContextY :: Double,
+  textContextSize :: Double,
+  textTitleCoverY :: Double,
+  textTitleCoverSize :: Double,
+  textContextX :: Double,
+  textContextCoverY :: Double,
+  textContextCoverSize :: Double,
+  textCodeBlockSize :: Double,
+  textCodeBlockOfs :: Double,
+  turtleSize :: Double,
+  waveSize :: Double,
+  waveCharMax :: Double,
+  speechMinutes :: Double
+  }
+gCfg :: Config
+gCfg = Config {
+  canvasW   = 640,
+  canvasH  = 480,
+  alphaBackG = 0.5,
+  textTitleCoverY = 170,
+  textTitleCoverSize = 40,
+  textContextCoverY = 300,
+  textContextCoverSize = 30,
+  textTitleY = 30,
+  textTitleSize = 40,
+  textContextX = 40,
+  textContextY = 120,
+  textContextSize = 30,
+  textCodeBlockSize = 20,
+  textCodeBlockOfs = 20,
+  turtleSize = 40,
+  waveSize = 20,
+  waveCharMax = 53, -- xxxxxx 本来はwaveSizeから検出すべき手で数えんなよwwww
+  speechMinutes = 14 -- xxxxx for 第0回 スタートHaskell
+  }
