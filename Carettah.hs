@@ -1,7 +1,6 @@
 module Main where
 import System
 import System.Mem
-import System.Exit
 import Data.Char
 import Data.Bits
 import Data.IORef
@@ -396,9 +395,8 @@ outputPDF pdf = do
       ih = canvasH gCfg
       dw = toDouble iw
       dh = toDouble ih
-  C.withPDFSurface pdf dw dh
-    (flip C.renderWith $ sequence_ $ fmap (\a -> renderSlideFilter iw ih a >> C.showPage) s)
-  exitSuccess
+  C.withPDFSurface pdf dw dh $ flip C.renderWith . sequence_ $
+    fmap (\a -> renderSlide a iw ih >> C.showPage) [0..(length s - 1)]
 
 startPresentation :: Bool -> IO ()
 startPresentation wiiOn = do
