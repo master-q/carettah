@@ -10,6 +10,8 @@ Category:               Graphics
 Stability:              Experimental
 Cabal-Version:          >= 1.6
 Build-Type:             Simple
+Homepage:               https://gitorious.org/carettah
+Tested-with:            GHC == 7.0.4
 
 data-files:             data/turtle.png
 
