@@ -1,0 +1,31 @@
+Name:                   carretah
+Version:                0.0.1
+Author:                 Kiwamu Okabe <kiwamu@debian.or.jp>
+Maintainer:             Kiwamu Okabe <kiwamu@debian.or.jp>
+License:                GPL-2
+License-File:           COPYING
+Synopsis:               A presentation tool writtten with Haskell.
+Description:            A presentation tool writtten with Haskell.
+Category:               Graphics
+Stability:              Experimental
+Cabal-Version:          >= 1.6
+Build-Type:             Simple
+
+data-files:             sample/turtle.png
+
+Executable              carettah
+  hs-source-dirs:       .
+  main-is:              Carettah.hs
+  build-depends:        base >= 4 && < 5,
+                        time,
+                        mtl,
+                        pandoc,
+                        gtk,
+                        cairo,
+                        hcwiid
+  ghc-options:          -Wall
+  ghc-prof-options:     -auto-all -caf-all
+
+Source-Repository head
+  Type:                 git
+  Location:             git://gitorious.org/carettah/carettah.git
