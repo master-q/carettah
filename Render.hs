@@ -3,10 +3,10 @@ module Render (clearCanvas, CairoPosition(..), CairoSize(..), toDouble,
                renderText, yposSequence, renderSlide) where
 import Data.Char
 import Data.Bits
-import Data.Time
 import Control.Monad.Reader
 import qualified Graphics.Rendering.Cairo as C
-import Config(Config(..), gCfg, queryCarettahState, CarettahState(startTime, slides))
+import Config(Config(..), gCfg, elapsedSecFromStart)
+
 data CairoPosition = CairoPosition Double | CairoCenter
                    deriving Show
 data CairoSize = CairoSize Double | CairoFit
@@ -115,13 +115,6 @@ clearCanvas w h = do
   C.fill >> C.stroke >> C.restore
 
 -- xxx プレゼン時間に応じて波表示
-elapsedSecFromStart :: IO Double
-elapsedSecFromStart = do
-  n <- getCurrentTime
-  s <- queryCarettahState startTime
-  let d = diffUTCTime n s
-  return $ (fromRational . toRational) d
-
 renderWave :: C.Render ()
 renderWave = do
   sec <- liftIO elapsedSecFromStart
@@ -154,8 +147,7 @@ renderSlideFilter w h s = do
   _ <- yposSequence tcy s
   renderWave
 
-renderSlide :: Int -> Int -> Int -> C.Render ()
-renderSlide p w h = do
-  s <- queryCarettahState slides
+renderSlide :: [[Double -> C.Render Double]] -> Int -> Int -> Int -> C.Render ()
+renderSlide s p w h = do
   renderSlideFilter w h (s !! p)
   renderTurtle $ toDouble p / toDouble (length s - 1)

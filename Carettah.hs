@@ -1,5 +1,5 @@
 module Main where
-import System
+import System.Environment
 import System.Mem
 import Data.Time
 import Data.Maybe
@@ -89,10 +89,11 @@ coverSlide blocks = map go blocks
 updateCanvas :: G.DrawingArea -> IO ()
 updateCanvas canvas = do
   n <- queryCarettahState page
+  s <- queryCarettahState slides
   win <- G.widgetGetDrawWindow canvas
   (width, height) <- G.widgetGetSize canvas
   G.renderWithDrawable win $
-    renderSlide n width height
+    renderSlide s n width height
   updateRenderdTime
   performGC
 
@@ -123,7 +124,7 @@ outputPDF pdf = do
       dw = toDouble iw
       dh = toDouble ih
   C.withPDFSurface pdf dw dh $ flip C.renderWith . sequence_ $
-    fmap (\a -> renderSlide a iw ih >> C.showPage) [0..(length s - 1)]
+    fmap (\a -> renderSlide s a iw ih >> C.showPage) [0..(length s - 1)]
 
 startPresentation :: Bool -> IO ()
 startPresentation wiiOn = do

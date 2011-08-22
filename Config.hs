@@ -2,7 +2,7 @@ module Config (gCfg, defaultOptions, Config(..), Options(..), CarettahState(..),
                nextPage, prevPage, topPage, endPage,
                setWiiHandle, updateWiiBtnFlag,
                updateSlides, queryCarettahState,
-               updateStartTime, updateRenderdTime) where
+               updateStartTime, updateRenderdTime, elapsedSecFromStart) where
 
 import Data.IORef
 import Data.Time
@@ -63,6 +63,13 @@ updateRenderdTime :: IO ()
 updateRenderdTime = do
   t <- getCurrentTime
   updateCarettahState (\s -> s { renderdTime = t })
+
+elapsedSecFromStart :: IO Double
+elapsedSecFromStart = do
+  n <- getCurrentTime
+  s <- queryCarettahState startTime
+  let d = diffUTCTime n s
+  return $ (fromRational . toRational) d
 
 setWiiHandle :: Bool -> IO ()
 setWiiHandle won
