@@ -1,5 +1,4 @@
 * highlightPangoLayoutを作ってshowLayoutでソースコードを色付き表示 (参考: gtk2hs/cairo/demo/Drawing.hs)
 * [BUG] 画像ファイルの縮小アルゴがおかしい
 * markdown内コード実行
-* cabal化
 * メモリリーク解析
