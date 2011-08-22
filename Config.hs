@@ -76,10 +76,13 @@ setWiiHandle won
   | won = do
     putStrLn "Put Wiimote in discoverable mode now (press 1+2)..."
     wm <- cwiidOpen
-    putStrLn "found!"
-    _ <- cwiidSetRptMode wm
-    _ <- cwiidSetLed wm
-    updateCarettahState (\s -> s { wiiHandle = WiiHandle wm })
+    case wm of
+      Nothing  -> putStrLn "not found..."
+      Just wmj -> do
+        putStrLn "found!"
+        _ <- cwiidSetRptMode wmj
+        _ <- cwiidSetLed wmj
+        updateCarettahState (\s -> s { wiiHandle = WiiHandle wmj })
   | otherwise = return ()
 
 updateWiiBtnFlag :: IO CWiidBtnFlag
