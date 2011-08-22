@@ -1,10 +1,12 @@
+SRCS := $(wildcard *.hs)
+
 all: carettah
 
 carettah: Carettah.hs
 	ghc --make -Wall Carettah.hs -o carettah
 
-lint: Carettah.hs Config.hs Render.hs
-	hlint -c Carettah.hs Config.hs Render.hs
+lint:
+	hlint -c $(SRCS)
 
 clean:
 	rm -rf carettah

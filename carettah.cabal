@@ -1,4 +1,4 @@
-Name:                   carretah
+Name:                   carettah
 Version:                0.0.1
 Author:                 Kiwamu Okabe <kiwamu@debian.or.jp>
 Maintainer:             Kiwamu Okabe <kiwamu@debian.or.jp>
@@ -11,18 +11,20 @@ Stability:              Experimental
 Cabal-Version:          >= 1.6
 Build-Type:             Simple
 
-data-files:             sample/turtle.png
+data-files:             data/turtle.png
 
 Executable              carettah
   hs-source-dirs:       .
   main-is:              Carettah.hs
   build-depends:        base >= 4 && < 5,
+                        filepath,
                         time,
                         mtl,
                         pandoc,
                         gtk,
                         cairo,
                         hcwiid
+  other-modules:        Paths_carettah
   ghc-options:          -Wall
   ghc-prof-options:     -auto-all -caf-all
 
