@@ -1,5 +1,5 @@
 Name:                   carettah
-Version:                0.0.1
+Version:                0.0.2
 Author:                 Kiwamu Okabe <kiwamu@debian.or.jp>
 Maintainer:             Kiwamu Okabe <kiwamu@debian.or.jp>
 License:                GPL-2
@@ -26,7 +26,7 @@ Executable              carettah
                         gtk,
                         cairo,
                         hcwiid
-  other-modules:        Paths_carettah
+  other-modules:        Paths_carettah Config Render
   ghc-options:          -Wall
   ghc-prof-options:     -auto-all -caf-all
 
