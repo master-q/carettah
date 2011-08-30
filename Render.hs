@@ -4,10 +4,11 @@ module Render (clearCanvas, CairoPosition(..), CairoSize(..), toDouble,
 import Data.Char
 import Data.Bits
 import System.FilePath ((</>),(<.>))
-import Paths_carettah (getDataFileName)
 import Control.Monad.Reader
 import qualified Graphics.Rendering.Cairo as C
+--
 import Config(Config(..), gCfg, elapsedSecFromStart)
+import WrapPaths (wrapGetDataFileName)
 
 data CairoPosition = CairoPosition Double | CairoCenter
                    deriving Show
@@ -130,7 +131,7 @@ renderWave = do
 
 renderTurtle :: Double -> C.Render ()
 renderTurtle progress = do
-  fn <- liftIO . getDataFileName $ "data" </> "turtle" <.> "png"
+  fn <- liftIO . wrapGetDataFileName $ "data" </> "turtle" <.> "png"
   renderPngSize (ts / 2 + (cw - ts * 2) * progress) (ch - ts) ts ts 1 fn >> return ()
     where ts = turtleSize gCfg
           cw = toDouble $ canvasW gCfg

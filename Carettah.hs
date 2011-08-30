@@ -1,8 +1,12 @@
 module Main where
 import System.Environment
 import System.Mem
+import System.IO
+import System.Console.GetOpt
+import System.Exit
 import Data.Time
 import Data.Maybe
+import Data.Version (showVersion)
 import Control.Monad.Reader
 --import Control.Monad.State
 --import Control.Monad.Trans
@@ -10,10 +14,10 @@ import qualified Graphics.UI.Gtk as G
 import qualified Graphics.Rendering.Cairo as C
 import qualified Text.Pandoc as P
 import System.CWiid
-import System.Console.GetOpt
 --
 import Config
 import Render
+import WrapPaths
 
 markdown :: String -> P.Pandoc
 markdown = P.readMarkdown P.defaultParserState{ P.stateStandalone = True }
@@ -110,11 +114,12 @@ options =
 
 compilerOpts :: [String] -> IO (Options, [String])
 compilerOpts argv =
-  let header = "Usage: carettah [OPTION...] FILE"
+  let header = "\ncarettah version " ++ showVersion wrapVersion ++ "\n" ++
+               "Usage: carettah [OPTION...] FILE"
   in case getOpt Permute options argv of
-    (_,[],[] ) -> error $ usageInfo header options
+    (_,[],[] ) -> hPutStrLn stderr (usageInfo header options) >> exitSuccess
     (o,n,[]  ) -> return (foldl (flip id) defaultOptions o, n)
-    (_,_,errs) -> error (concat errs ++ usageInfo header options)
+    (_,_,errs) -> hPutStrLn stderr (concat errs ++ usageInfo header options) >> exitFailure
 
 outputPDF :: String -> IO ()
 outputPDF pdf = do
