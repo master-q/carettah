@@ -3,3 +3,4 @@
 * markdown内コード実行
 * メモリリーク解析
 * androidカメラを直接リアルタイムにスライド表示
+* libreofficeのodgファイルをunoconvコマンドで自動変換
