@@ -89,11 +89,11 @@ renderPngInline CairoCenter (CairoPosition y) CairoFit CairoFit alpha file = do
       dih = toDouble ih
       cw = toDouble (canvasW gCfg)
       ch = toDouble (canvasH gCfg)
-      iratio = diw / dih
-      sratio = cw / ch
-      scale = if iratio > sratio then dih / ch * 0.9 else diw / cw * 0.9
+      wratio = cw / diw
+      hratio = (ch - y) / dih
+      scale = if wratio > hratio then hratio * 0.95 else wratio * 0.95
       tiw = diw * scale
-      tih = tih * scale
+      tih = dih * scale
   C.scale scale scale
   renderSurface ((cw / 2 - tiw / 2) / scale) (y / scale) alpha surface
   C.restore
