@@ -164,7 +164,7 @@ startPresentation wiiOn presenTime = do
                         let dtime :: Double
                             dtime = (fromRational . toRational) $
                                     diffUTCTime ntime rtime
-                        if dtime > 2 then G.widgetQueueDraw canvas >>
+                        if dtime > 5 then G.widgetQueueDraw canvas >>
                                           return True else do
                           bf <- queryCarettahState wiiBtnFlag
                           af <- updateWiiBtnFlag

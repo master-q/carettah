@@ -78,6 +78,7 @@ renderPngSize x y w h alpha file = do
   let yscale = h / toDouble ih
   C.scale xscale yscale
   renderSurface (x / xscale) (y / yscale) alpha surface
+  C.surfaceFinish surface
   C.restore
   return $ y + h
 
@@ -96,6 +97,7 @@ renderPngInline CairoCenter (CairoPosition y) CairoFit CairoFit alpha file = do
       tih = dih * scale
   C.scale scale scale
   renderSurface ((cw / 2 - tiw / 2) / scale) (y / scale) alpha surface
+  C.surfaceFinish surface
   C.restore
   return $ y + tih
 renderPngInline _ _ _ _ _ _ = return 0 -- xxx renerPngFit統合して一関数にすべき
@@ -108,6 +110,7 @@ renderPngFit alpha file = do
       ch = toDouble $ canvasH gCfg
   C.scale (cw / toDouble iw) (ch / toDouble ih)
   renderSurface 0 0 alpha surface
+  C.surfaceFinish surface
   C.restore
 
 clearCanvas :: Int -> Int -> C.Render ()
