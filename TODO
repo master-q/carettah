@@ -1,6 +1,12 @@
 * -tオプションでプレゼン時間指定 (暫定:mdファイル側で指定可能にするべき)
 * メモリリーク解析
 * pango markdownを使ってテキストを表示
+  ctxt <- cairoCreateContext Nothing
+  text <- layoutEmpty ctxt
+  text `layoutSetText` "Hello World.\nhoge"
+  moveTo 30 40
+  showLayout text
+  http://hackage.haskell.org/packages/archive/pango/0.11.2/doc/html/Graphics-Rendering-Pango-Layout.html#v:layoutGetExtents
 * turtle.pngをwiiリモコンに合わせて回転
 * wiiリモコンをふりおろしたらスライドを切って、次ページへ
 * yposSequenceのまわりをStateモナドで書き直す
