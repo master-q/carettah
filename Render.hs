@@ -12,9 +12,9 @@ import Config
 import WrapPaths (wrapGetDataFileName)
 
 data CairoPosition = CairoPosition Double | CairoCenter
-                   deriving Show
+                   deriving (Show, Eq, Ord)
 data CairoSize = CairoSize Double | CairoFit
-                   deriving Show
+                   deriving (Show, Eq, Ord)
 
 -- memoize
 memo2 :: (Ord a, Ord b) => (a -> b -> v) -> a -> b -> v
@@ -100,26 +100,26 @@ renderPngSize = memo6 f
           C.restore
           return $ y + h
 
--- will be memoized
 renderPngInline :: CairoPosition -> CairoPosition -> CairoSize -> CairoSize -> Double -> FilePath -> C.Render Double
-renderPngInline CairoCenter (CairoPosition y) CairoFit CairoFit alpha file = do
-  C.save
-  (surface, iw, ih) <- pngSurfaceSize file
-  let diw = toDouble iw
-      dih = toDouble ih
-      cw = toDouble (canvasW gCfg)
-      ch = toDouble (canvasH gCfg)
-      wratio = cw / diw
-      hratio = (ch - y) / dih
-      scale = if wratio > hratio then hratio * 0.95 else wratio * 0.95
-      tiw = diw * scale
-      tih = dih * scale
-  C.scale scale scale
-  renderSurface ((cw / 2 - tiw / 2) / scale) (y / scale) alpha surface
-  C.surfaceFinish surface
-  C.restore
-  return $ y + tih
-renderPngInline _ _ _ _ _ _ = return 0 -- xxx renerPngFit統合して一関数にすべき
+renderPngInline = memo6 f
+  where f CairoCenter (CairoPosition y) CairoFit CairoFit alpha file = do
+          C.save
+          (surface, iw, ih) <- pngSurfaceSize file
+          let diw = toDouble iw
+              dih = toDouble ih
+              cw = toDouble (canvasW gCfg)
+              ch = toDouble (canvasH gCfg)
+              wratio = cw / diw
+              hratio = (ch - y) / dih
+              scale = if wratio > hratio then hratio * 0.95 else wratio * 0.95
+              tiw = diw * scale
+              tih = dih * scale
+          C.scale scale scale
+          renderSurface ((cw / 2 - tiw / 2) / scale) (y / scale) alpha surface
+          C.surfaceFinish surface
+          C.restore
+          return $ y + tih
+        f _ _ _ _ _ _ = return 0 -- xxx renerPngFit統合して一関数にすべき
 
 renderPngFit :: Double -> FilePath -> C.Render ()
 renderPngFit = memo2 f
