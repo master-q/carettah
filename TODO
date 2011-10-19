@@ -1,6 +1,9 @@
-* highlightPangoLayoutを作ってshowLayoutでソースコードを色付き表示 (参考: gtk2hs/cairo/demo/Drawing.hs)
-* [BUG] 画像ファイルの縮小アルゴがおかしい
-* markdown内コード実行
+* -tオプションでプレゼン時間指定 (暫定:mdファイル側で指定可能にするべき)
 * メモリリーク解析
+* turtle.pngをwiiリモコンに合わせて回転
+* wiiリモコンをふりおろしたらスライドを切って、次ページへ
+* yposSequenceのまわりをStateモナドで書き直す
+* highlightPangoLayoutを作ってshowLayoutでソースコードを色付き表示 (参考: gtk2hs/cairo/demo/Drawing.hs)
+* markdown内コード実行
 * androidカメラを直接リアルタイムにスライド表示
 * libreofficeのodgファイルをunoconvコマンドで自動変換
