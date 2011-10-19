@@ -3,6 +3,7 @@ module Render (clearCanvas, CairoPosition(..), CairoSize(..), toDouble,
                renderText, yposSequence, renderSlide) where
 import Data.Char
 import Data.Bits
+import qualified Data.MemoUgly as M
 import System.FilePath ((</>),(<.>))
 import Control.Monad.Reader
 import qualified Graphics.Rendering.Cairo as C
@@ -14,6 +15,21 @@ data CairoPosition = CairoPosition Double | CairoCenter
                    deriving Show
 data CairoSize = CairoSize Double | CairoFit
                    deriving Show
+
+-- memoize
+memo2 :: (Ord a, Ord b) => (a -> b -> v) -> a -> b -> v
+memo2 v = M.memo (M.memo . v)
+memo3 :: (Ord a, Ord b, Ord c) => (a -> b -> c -> v) -> a -> b -> c -> v
+memo3 v = M.memo (memo2 . v)
+memo4 :: (Ord a, Ord b, Ord c, Ord d) =>
+         (a -> b -> c -> d -> v) -> a -> b -> c -> d -> v
+memo4 v = M.memo (memo3 . v)
+memo5 :: (Ord a, Ord b, Ord c, Ord d, Ord e) =>
+         (a -> b -> c -> d -> e -> v) -> a -> b -> c -> d -> e -> v
+memo5 v = M.memo (memo4 . v)
+memo6 :: (Ord a, Ord b, Ord c, Ord d, Ord e, Ord f) =>
+         (a -> b -> c -> d -> e -> f -> v) -> a -> b -> c -> d -> e -> f -> v
+memo6 v = M.memo (memo5 . v)
 
 -- copy from System.Glib.UTFString (gtk2hs/glib/System/Glib/UTFString.hs)
 -- 本来はCStringを使うとこに埋め込んどくべき。gtk2hsを参考に
@@ -71,17 +87,20 @@ pngSurfaceSize file = do
   return (surface, w, h)
 
 renderPngSize :: Double -> Double -> Double -> Double -> Double -> FilePath -> C.Render Double
-renderPngSize x y w h alpha file = do
-  C.save
-  (surface, iw, ih) <- pngSurfaceSize file
-  let xscale = w / toDouble iw
-  let yscale = h / toDouble ih
-  C.scale xscale yscale
-  renderSurface (x / xscale) (y / yscale) alpha surface
-  C.surfaceFinish surface
-  C.restore
-  return $ y + h
+--renderPngSize x y w h alpha file = memo6 f
+renderPngSize = memo6 f
+  where f x y w h alpha file = do
+          C.save
+          (surface, iw, ih) <- pngSurfaceSize file
+          let xscale = w / toDouble iw
+          let yscale = h / toDouble ih
+          C.scale xscale yscale
+          renderSurface (x / xscale) (y / yscale) alpha surface
+          C.surfaceFinish surface
+          C.restore
+          return $ y + h
 
+-- will be memoized
 renderPngInline :: CairoPosition -> CairoPosition -> CairoSize -> CairoSize -> Double -> FilePath -> C.Render Double
 renderPngInline CairoCenter (CairoPosition y) CairoFit CairoFit alpha file = do
   C.save
@@ -103,15 +122,16 @@ renderPngInline CairoCenter (CairoPosition y) CairoFit CairoFit alpha file = do
 renderPngInline _ _ _ _ _ _ = return 0 -- xxx renerPngFit統合して一関数にすべき
 
 renderPngFit :: Double -> FilePath -> C.Render ()
-renderPngFit alpha file = do
-  C.save
-  (surface, iw, ih) <- pngSurfaceSize file
-  let cw = toDouble $ canvasW gCfg
-      ch = toDouble $ canvasH gCfg
-  C.scale (cw / toDouble iw) (ch / toDouble ih)
-  renderSurface 0 0 alpha surface
-  C.surfaceFinish surface
-  C.restore
+renderPngFit = memo2 f
+  where f alpha file = do
+          C.save
+          (surface, iw, ih) <- pngSurfaceSize file
+          let cw = toDouble $ canvasW gCfg
+              ch = toDouble $ canvasH gCfg
+          C.scale (cw / toDouble iw) (ch / toDouble ih)
+          renderSurface 0 0 alpha surface
+          C.surfaceFinish surface
+          C.restore
 
 clearCanvas :: Int -> Int -> C.Render ()
 clearCanvas w h = do
