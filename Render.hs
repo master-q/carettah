@@ -7,7 +7,7 @@ import System.FilePath ((</>),(<.>))
 import Control.Monad.Reader
 import qualified Graphics.Rendering.Cairo as C
 --
-import Config(Config(..), gCfg, elapsedSecFromStart)
+import Config
 import WrapPaths (wrapGetDataFileName)
 
 data CairoPosition = CairoPosition Double | CairoCenter
@@ -121,9 +121,10 @@ clearCanvas w h = do
 renderWave :: C.Render ()
 renderWave = do
   sec <- liftIO elapsedSecFromStart
+  smin <- queryCarettahState speechMinutes
   let ws = waveSize gCfg
       ch = toDouble $ canvasH gCfg
-      speechSec = 60 * speechMinutes gCfg
+      speechSec = 60 * smin
       charMax = waveCharMax gCfg
       numChar = round $ charMax * sec / speechSec
   _ <- renderText (CairoPosition 0) (CairoPosition $ ch - ws) ws $ replicate numChar '>'

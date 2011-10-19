@@ -1,8 +1,10 @@
-module Config (gCfg, defaultOptions, Config(..), Options(..), CarettahState(..),
+module Config (Config(..), Options(..), CarettahState(..),
+               gCfg, defaultOptions,
                nextPage, prevPage, topPage, endPage,
                setWiiHandle, updateWiiBtnFlag,
                updateSlides, queryCarettahState,
-               updateStartTime, updateRenderdTime, elapsedSecFromStart) where
+               updateStartTime, updateRenderdTime, elapsedSecFromStart,
+               updateSpeechMinutes) where
 
 import Data.IORef
 import Data.Time
@@ -13,11 +15,13 @@ import System.CWiid
 
 data Options = Options { optWiimote   :: Bool
                        , optPdfOutput :: Maybe FilePath
+                       , optTime      :: Maybe Double
                        } deriving Show
 
 defaultOptions :: Options
 defaultOptions = Options { optWiimote   = False
                          , optPdfOutput = Nothing
+                         , optTime      = Just 5
                          }
 
 data WiiHandle = NoWiiHandle | WiiHandle CWiidWiimote
@@ -27,11 +31,12 @@ data CarettahState = CarettahState {
   startTime :: UTCTime,
   renderdTime :: UTCTime,
   wiiHandle :: WiiHandle,
-  wiiBtnFlag :: CWiidBtnFlag
+  wiiBtnFlag :: CWiidBtnFlag,
+  speechMinutes :: Double
   }
 
 carettahState :: IORef CarettahState
-carettahState = unsafePerformIO $ newIORef CarettahState { page = 0, slides = undefined, startTime = undefined, renderdTime = undefined, wiiHandle = NoWiiHandle, wiiBtnFlag = CWiidBtnFlag 0 }
+carettahState = unsafePerformIO $ newIORef CarettahState { page = 0, slides = undefined, startTime = undefined, renderdTime = undefined, wiiHandle = NoWiiHandle, wiiBtnFlag = CWiidBtnFlag 0 , speechMinutes = 5}
 
 updateCarettahState :: MonadIO m => (CarettahState -> CarettahState) -> m ()
 updateCarettahState fn = liftIO $! atomicModifyIORef carettahState $ \st -> (fn st, ())
@@ -95,6 +100,10 @@ updateWiiBtnFlag = do
         return bs
   go wh
 
+updateSpeechMinutes :: MonadIO m => (Double -> Double) -> m ()
+updateSpeechMinutes fn =
+  updateCarettahState (\s -> s { speechMinutes = fn $ speechMinutes s })
+
 -- constant value
 data Config = Config {
   --- posX,posY,fsizeの値は640x480の画面サイズが基準
@@ -114,8 +123,7 @@ data Config = Config {
   textCodeBlockOfs :: Double,
   turtleSize :: Double,
   waveSize :: Double,
-  waveCharMax :: Double,
-  speechMinutes :: Double
+  waveCharMax :: Double
   }
 gCfg :: Config
 gCfg = Config {
@@ -135,6 +143,5 @@ gCfg = Config {
   textCodeBlockOfs = 20,
   turtleSize = 40,
   waveSize = 20,
-  waveCharMax = 53, -- xxxxxx 本来はwaveSizeから検出すべき手で数えんなよwwww
-  speechMinutes = 14 -- xxxxx for 第0回 スタートHaskell
+  waveCharMax = 53 -- xxxxxx 本来はwaveSizeから検出すべき手で数えんなよwwww
   }

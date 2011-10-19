@@ -2,7 +2,7 @@ SRCS := $(wildcard *.hs)
 
 all: carettah
 
-carettah: Carettah.hs
+carettah: Carettah.hs $(SRCS)
 	ghc --make -Wall -idata Carettah.hs -o carettah
 
 lint:

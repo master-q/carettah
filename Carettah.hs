@@ -110,6 +110,10 @@ options =
     (OptArg ((\ f opts -> opts { optPdfOutput = Just f }) . fromMaybe "output.pdf")
      "FILE")
     "output PDF_FILE"
+  , Option "t"     ["time"]
+    (OptArg ((\ f opts -> opts { optTime = Just $ read f }) . fromMaybe "5")
+     "TIME(minute)")
+    "set presentation time with minute"
   ]
 
 compilerOpts :: [String] -> IO (Options, [String])
@@ -131,10 +135,11 @@ outputPDF pdf = do
   C.withPDFSurface pdf dw dh $ flip C.renderWith . sequence_ $
     fmap (\a -> renderSlide s a iw ih >> C.showPage) [0..(length s - 1)]
 
-startPresentation :: Bool -> IO ()
-startPresentation wiiOn = do
-  -- setup wiimote
+startPresentation :: Bool -> Double -> IO ()
+startPresentation wiiOn presenTime = do
+  -- setup
   setWiiHandle wiiOn
+  updateSpeechMinutes $ const presenTime
   -- start GUI
   _ <- G.initGUI
   window <- G.windowNew
@@ -185,7 +190,7 @@ main = do
   updateStartTime
   updateRenderdTime
   -- opts
-  (Options {optWiimote = wiiOn, optPdfOutput = pdfFilen}, filen:_) <-
+  (Options {optWiimote = wiiOn, optPdfOutput = pdfFilen, optTime = Just presenTime}, filen:_) <-
     compilerOpts =<< getArgs
   -- parse markdown
   s <- readFile filen
@@ -193,4 +198,4 @@ main = do
     in updateSlides $ const $ map (\p -> fst p . backgroundTop $ snd p) z
   case pdfFilen of
     Just pdf -> outputPDF pdf
-    Nothing  -> startPresentation wiiOn
+    Nothing  -> startPresentation wiiOn presenTime

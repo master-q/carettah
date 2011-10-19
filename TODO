@@ -1,4 +1,3 @@
-* -tオプションでプレゼン時間指定 (暫定:mdファイル側で指定可能にするべき)
 * メモリリーク解析
 * pango markdownを使ってテキストを表示
   ctxt <- cairoCreateContext Nothing
@@ -14,3 +13,4 @@
 * markdown内コード実行
 * androidカメラを直接リアルタイムにスライド表示
 * libreofficeのodgファイルをunoconvコマンドで自動変換
+* mdファイル側でプレゼン時間指定
