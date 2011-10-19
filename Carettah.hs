@@ -155,7 +155,9 @@ startPresentation wiiOn presenTime = do
         "q" -> G.widgetDestroy window
         "j" -> nextPage >> G.widgetQueueDraw canvas
         "k" -> prevPage >> G.widgetQueueDraw canvas
-        "r" -> print "TODO: reload slides" -- xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        "r" -> do md <- queryCarettahState markdownFname
+                  loadMarkdown md
+                  nextPage >> prevPage >> G.widgetQueueDraw canvas
         _   -> return ()
   _ <- G.onDestroy window G.mainQuit
   _ <- G.onExpose canvas $ const (updateCanvas canvas >> return True)
@@ -184,6 +186,12 @@ startPresentation wiiOn presenTime = do
   updateRenderdTime
   G.mainGUI
 
+loadMarkdown :: String -> IO ()
+loadMarkdown fn = do
+  s <- readFile fn
+  let z = zip (coverSlide:repeat blockToSlide) (splitBlocks $ markdown s)
+  updateSlides $ const $ map (\p -> fst p . backgroundTop $ snd p) z
+
 main :: IO ()
 main = do
   -- init
@@ -192,10 +200,9 @@ main = do
   -- opts
   (Options {optWiimote = wiiOn, optPdfOutput = pdfFilen, optTime = Just presenTime}, filen:_) <-
     compilerOpts =<< getArgs
+  updateMarkdownFname $ const filen
   -- parse markdown
-  s <- readFile filen
-  let z = zip (coverSlide:repeat blockToSlide) (splitBlocks $ markdown s)
-    in updateSlides $ const $ map (\p -> fst p . backgroundTop $ snd p) z
+  loadMarkdown filen
   case pdfFilen of
     Just pdf -> outputPDF pdf
     Nothing  -> startPresentation wiiOn presenTime

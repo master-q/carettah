@@ -4,7 +4,7 @@ module Config (Config(..), Options(..), CarettahState(..),
                setWiiHandle, updateWiiBtnFlag,
                updateSlides, queryCarettahState,
                updateStartTime, updateRenderdTime, elapsedSecFromStart,
-               updateSpeechMinutes) where
+               updateSpeechMinutes, updateMarkdownFname) where
 
 import Data.IORef
 import Data.Time
@@ -32,11 +32,12 @@ data CarettahState = CarettahState {
   renderdTime :: UTCTime,
   wiiHandle :: WiiHandle,
   wiiBtnFlag :: CWiidBtnFlag,
-  speechMinutes :: Double
+  speechMinutes :: Double,
+  markdownFname :: String
   }
 
 carettahState :: IORef CarettahState
-carettahState = unsafePerformIO $ newIORef CarettahState { page = 0, slides = undefined, startTime = undefined, renderdTime = undefined, wiiHandle = NoWiiHandle, wiiBtnFlag = CWiidBtnFlag 0 , speechMinutes = 5}
+carettahState = unsafePerformIO $ newIORef CarettahState { page = 0, slides = undefined, startTime = undefined, renderdTime = undefined, wiiHandle = NoWiiHandle, wiiBtnFlag = CWiidBtnFlag 0 , speechMinutes = 5, markdownFname = "notfound.md"}
 
 updateCarettahState :: MonadIO m => (CarettahState -> CarettahState) -> m ()
 updateCarettahState fn = liftIO $! atomicModifyIORef carettahState $ \st -> (fn st, ())
@@ -103,6 +104,10 @@ updateWiiBtnFlag = do
 updateSpeechMinutes :: MonadIO m => (Double -> Double) -> m ()
 updateSpeechMinutes fn =
   updateCarettahState (\s -> s { speechMinutes = fn $ speechMinutes s })
+
+updateMarkdownFname :: MonadIO m => (String -> String) -> m ()
+updateMarkdownFname fn =
+  updateCarettahState (\s -> s { markdownFname = fn $ markdownFname s })
 
 -- constant value
 data Config = Config {
