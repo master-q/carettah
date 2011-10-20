@@ -1,6 +1,6 @@
 module Config (Config(..), Options(..), CarettahState(..),
                gCfg, defaultOptions,
-               nextPage, prevPage, topPage, endPage,
+               curPage, nextPage, prevPage, topPage, endPage,
                setWiiHandle, updateWiiBtnFlag,
                updateSlides, queryCarettahState,
                updateStartTime, updateRenderdTime, elapsedSecFromStart,
@@ -50,7 +50,10 @@ queryCarettahState fn = liftM fn $ liftIO $! readIORef carettahState
 updatePage :: MonadIO m => (Int -> Int) -> m ()
 updatePage fn = updateCarettahState (\s -> s { page = fn $ page s })
 
-nextPage, prevPage, topPage, endPage :: MonadIO m => m ()
+curPage, nextPage, prevPage, topPage, endPage :: MonadIO m => m ()
+curPage = do s <- queryCarettahState slides
+             let maxpage = length s - 1
+             updatePage (\p -> if p >= maxpage then maxpage else p)
 nextPage = do s <- queryCarettahState slides
               let maxpage = length s - 1
               updatePage (\p -> if p >= maxpage then maxpage else p + 1)
