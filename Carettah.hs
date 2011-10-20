@@ -113,10 +113,10 @@ options =
   , Option "t"     ["time"]
     (OptArg ((\ f opts -> opts { optTime = Just $ read f }) . fromMaybe "5")
      "TIME(minute)")
-    "set presentation time with minute"
-  , Option "c"     ["count-page"]
-    (NoArg (\ opts -> opts { optCountPage = True }))
-    "count total page of slides"
+    "set presentation time with minutes"
+  , Option "i"     ["info"]
+    (NoArg (\ opts -> opts { optSlideInfo = True }))
+    "show slide infomation"
   ]
 
 carettahOpts :: [String] -> IO (Options, [String])
@@ -204,12 +204,12 @@ main = do
   updateRenderdTime
   -- opts
   (Options {optWiimote = wiiOn, optPdfOutput = pdfFilen,
-            optTime = Just presenTime, optCountPage = countOn}, filen:_) <-
+            optTime = Just presenTime, optSlideInfo = infoOn}, filen:_) <-
     carettahOpts =<< getArgs
   updateMarkdownFname $ const filen
   loadMarkdown filen
   -- count page
-  if countOn then do s <- queryCarettahState slides
-                     print $ length s
+  if infoOn then do s <- queryCarettahState slides
+                    putStrLn $ "Page: " ++ (show $ length s)
     else case pdfFilen of Just pdf -> outputPDF pdf
                           Nothing  -> startPresentation wiiOn presenTime

@@ -16,14 +16,14 @@ import System.CWiid
 data Options = Options { optWiimote   :: Bool
                        , optPdfOutput :: Maybe FilePath
                        , optTime      :: Maybe Double
-                       , optCountPage :: Bool
+                       , optSlideInfo :: Bool
                        } deriving Show
 
 defaultOptions :: Options
 defaultOptions = Options { optWiimote   = False
                          , optPdfOutput = Nothing
                          , optTime      = Just 5
-                         , optCountPage = False
+                         , optSlideInfo = False
                          }
 
 data WiiHandle = NoWiiHandle | WiiHandle CWiidWiimote
