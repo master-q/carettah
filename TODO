@@ -1,4 +1,3 @@
-* スライド枚数を数える-cオプション
 * reloadでprev nextをしないでcurrentページを調整する
 * メモリリーク解析
 * pango markdownを使ってテキストを表示

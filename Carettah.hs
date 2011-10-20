@@ -114,10 +114,13 @@ options =
     (OptArg ((\ f opts -> opts { optTime = Just $ read f }) . fromMaybe "5")
      "TIME(minute)")
     "set presentation time with minute"
+  , Option "c"     ["count-page"]
+    (NoArg (\ opts -> opts { optCountPage = True }))
+    "count total page of slides"
   ]
 
-compilerOpts :: [String] -> IO (Options, [String])
-compilerOpts argv =
+carettahOpts :: [String] -> IO (Options, [String])
+carettahOpts argv =
   let header = "\ncarettah version " ++ showVersion wrapVersion ++ "\n" ++
                "Usage: carettah [OPTION...] FILE"
   in case getOpt Permute options argv of
@@ -198,11 +201,13 @@ main = do
   updateStartTime
   updateRenderdTime
   -- opts
-  (Options {optWiimote = wiiOn, optPdfOutput = pdfFilen, optTime = Just presenTime}, filen:_) <-
-    compilerOpts =<< getArgs
+  (Options {optWiimote = wiiOn, optPdfOutput = pdfFilen,
+            optTime = Just presenTime, optCountPage = countOn}, filen:_) <-
+    carettahOpts =<< getArgs
   updateMarkdownFname $ const filen
-  -- parse markdown
   loadMarkdown filen
-  case pdfFilen of
-    Just pdf -> outputPDF pdf
-    Nothing  -> startPresentation wiiOn presenTime
+  -- count page
+  if countOn then do s <- queryCarettahState slides
+                     print $ length s
+    else case pdfFilen of Just pdf -> outputPDF pdf
+                          Nothing  -> startPresentation wiiOn presenTime
