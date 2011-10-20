@@ -202,14 +202,18 @@ main = do
   -- init
   updateStartTime
   updateRenderdTime
-  -- opts
-  (Options {optWiimote = wiiOn, optPdfOutput = pdfFilen,
-            optTime = Just presenTime, optSlideInfo = infoOn}, filen:_) <-
-    carettahOpts =<< getArgs
+  -- getopts
+  (opts, filen:_) <- carettahOpts =<< getArgs
+  -- setup slide
   updateMarkdownFname $ const filen
   loadMarkdown filen
-  -- count page
-  if infoOn then do s <- queryCarettahState slides
-                    putStrLn $ "Page: " ++ (show $ length s)
-    else case pdfFilen of Just pdf -> outputPDF pdf
-                          Nothing  -> startPresentation wiiOn presenTime
+  -- start
+  case opts of
+    (Options {optSlideInfo = True}) ->
+      do s <- queryCarettahState slides
+         putStrLn $ "Page: " ++ show (length s)
+    (Options {optPdfOutput = Just pdf}) ->
+      outputPDF pdf
+    (Options {optWiimote = wiiOn, optTime = Just presenTime}) ->
+      startPresentation wiiOn presenTime
+    _ -> error "NOTREACHED"
