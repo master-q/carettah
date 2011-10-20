@@ -158,6 +158,8 @@ startPresentation wiiOn presenTime = do
         "q" -> G.widgetDestroy window
         "j" -> nextPage >> G.widgetQueueDraw canvas
         "k" -> prevPage >> G.widgetQueueDraw canvas
+        "g" -> topPage >> G.widgetQueueDraw canvas
+        "G" -> endPage >> G.widgetQueueDraw canvas
         "r" -> do md <- queryCarettahState markdownFname
                   loadMarkdown md
                   curPage >> G.widgetQueueDraw canvas
