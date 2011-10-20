@@ -1,4 +1,8 @@
+* キーバインド追加 space, back space
+* キーバインドのヘルプを表示
+* wiiリモコンのヘルプを表示
 * メモリリーク解析
+* man作成
 * pango markdownを使ってテキストを表示
   ctxt <- cairoCreateContext Nothing
   text <- layoutEmpty ctxt
