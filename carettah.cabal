@@ -25,7 +25,6 @@ Executable              carettah
                         pandoc,
                         gtk,
                         cairo,
-                        uglymemo,
                         hcwiid
   other-modules:        Paths_carettah Config Render WrapPaths
   ghc-options:          -Wall

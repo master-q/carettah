@@ -3,7 +3,6 @@ module Render (clearCanvas, CairoPosition(..), CairoSize(..), toDouble,
                renderTextM, renderTextG, yposSequence, renderSlide) where
 import Data.Char
 import Data.Bits
-import qualified Data.MemoUgly as M
 import System.FilePath ((</>),(<.>))
 import Control.Monad.Reader
 import qualified Graphics.Rendering.Cairo as C
@@ -15,21 +14,6 @@ data CairoPosition = CairoPosition Double | CairoCenter
                    deriving (Show, Eq, Ord)
 data CairoSize = CairoSize Double | CairoFit
                    deriving (Show, Eq, Ord)
-
--- memoize
-memo2 :: (Ord a, Ord b) => (a -> b -> v) -> a -> b -> v
-memo2 v = M.memo (M.memo . v)
-memo3 :: (Ord a, Ord b, Ord c) => (a -> b -> c -> v) -> a -> b -> c -> v
-memo3 v = M.memo (memo2 . v)
-memo4 :: (Ord a, Ord b, Ord c, Ord d) =>
-         (a -> b -> c -> d -> v) -> a -> b -> c -> d -> v
-memo4 v = M.memo (memo3 . v)
-memo5 :: (Ord a, Ord b, Ord c, Ord d, Ord e) =>
-         (a -> b -> c -> d -> e -> v) -> a -> b -> c -> d -> e -> v
-memo5 v = M.memo (memo4 . v)
-memo6 :: (Ord a, Ord b, Ord c, Ord d, Ord e, Ord f) =>
-         (a -> b -> c -> d -> e -> f -> v) -> a -> b -> c -> d -> e -> f -> v
-memo6 v = M.memo (memo5 . v)
 
 -- copy from System.Glib.UTFString (gtk2hs/glib/System/Glib/UTFString.hs)
 -- 本来はCStringを使うとこに埋め込んどくべき。gtk2hsを参考に
@@ -92,8 +76,7 @@ pngSurfaceSize file = do
   return (surface, w, h)
 
 renderPngSize :: Double -> Double -> Double -> Double -> Double -> FilePath -> C.Render Double
---renderPngSize x y w h alpha file = memo6 f
-renderPngSize = memo6 f
+renderPngSize = f
   where f x y w h alpha file = do
           C.save
           (surface, iw, ih) <- pngSurfaceSize file
@@ -106,7 +89,7 @@ renderPngSize = memo6 f
           return $ y + h
 
 renderPngInline :: CairoPosition -> CairoPosition -> CairoSize -> CairoSize -> Double -> FilePath -> C.Render Double
-renderPngInline = memo6 f
+renderPngInline = f
   where f CairoCenter (CairoPosition y) CairoFit CairoFit alpha file = do
           C.save
           (surface, iw, ih) <- pngSurfaceSize file
@@ -128,7 +111,7 @@ renderPngInline = memo6 f
         f _ _ _ _ _ _ = return 0 -- xxx renerPngFit統合して一関数にすべき
 
 renderPngFit :: Double -> FilePath -> C.Render ()
-renderPngFit = memo2 f
+renderPngFit = f
   where f alpha file = do
           C.save
           (surface, iw, ih) <- pngSurfaceSize file
