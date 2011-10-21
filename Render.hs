@@ -1,10 +1,12 @@
 module Render (clearCanvas, CairoPosition(..), CairoSize(..), toDouble,
                renderWave, renderTurtle, renderPngFit, renderPngInline,
-               renderTextM, renderTextG, yposSequence, renderSlide) where
+               renderTextM, renderTextG, renderLayoutG, yposSequence,
+               renderSlide) where
 import Data.Char
 import Data.Bits
 import System.FilePath ((</>),(<.>))
 import Control.Monad.Reader
+import qualified Graphics.UI.Gtk as G
 import qualified Graphics.Rendering.Cairo as C
 --
 import Config
@@ -60,6 +62,26 @@ renderTextG :: CairoPosition -> CairoPosition -> Double -> String -> C.Render Do
 renderTextG = renderText' "TakaoExゴシック"
 renderTextM :: CairoPosition -> CairoPosition -> Double -> String -> C.Render Double
 renderTextM = renderText' "Takao P明朝"
+
+renderLayoutG :: CairoPosition -> CairoPosition -> Double -> String -> C.Render Double
+renderLayoutG x y fsize text = do
+  C.save
+  ctxt <- liftIO $ G.cairoCreateContext Nothing
+  txt <- liftIO $ G.layoutEmpty ctxt
+  liftIO $ G.layoutSetText txt text
+  let truePosition (CairoPosition x') (CairoPosition y') = return (x', y' + 10)
+      truePosition x' y' =
+        error $ "called with x=" ++ show x' ++ " y=" ++ show y'
+  (xt, yt) <- truePosition x y
+  C.moveTo xt yt
+  fd <- liftIO G.fontDescriptionNew
+  liftIO $ G.fontDescriptionSetSize fd fsize
+  liftIO $ G.layoutSetFontDescription txt (Just fd)
+  (_, G.PangoRectangle _ _ _ lh) <-
+    liftIO $ G.layoutGetExtents txt -- xxx inkとlogicalの違いは？
+  G.showLayout txt
+  C.restore
+  return $ yt + lh
 
 renderSurface :: Double -> Double -> Double -> C.Surface -> C.Render ()
 renderSurface x y alpha surface = do

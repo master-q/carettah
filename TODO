@@ -1,20 +1,22 @@
+* pngnqコマンドを呼び出してpngファイルを圧縮するオプション
 * 文字の周りを白縁にする
 * キーバインド追加 space, back space
 * キーバインドのヘルプを表示
 * wiiリモコンのヘルプを表示
 * メモリリーク解析
+* 行の折り返し
+  layoutSetWidth :: PangoLayout -> Maybe Double -> IO ()
+  layoutSetWrap :: PangoLayout -> LayoutWrapMode -> IO ()
 * man作成
-* pango markdownを使ってテキストを表示
-  ctxt <- cairoCreateContext Nothing
-  text <- layoutEmpty ctxt
-  text `layoutSetText` "Hello World.\nhoge"
-  moveTo 30 40
-  showLayout text
-  http://hackage.haskell.org/packages/archive/pango/0.11.2/doc/html/Graphics-Rendering-Pango-Layout.html#v:layoutGetExtents
+* pangoでmonospaceフォントを使わないとインデントが変
+* Graphics.Rendering.CairoとGraphics.UI.Gtkを再調整。Cairoは統合された？
+* -nオプションでmarkdownひな形ファイルを作る
 * turtle.pngをwiiリモコンに合わせて回転
 * wiiリモコンをふりおろしたらスライドを切って、次ページへ
 * yposSequenceのまわりをStateモナドで書き直す
-* highlightPangoLayoutを作ってshowLayoutでソースコードを色付き表示 (参考: gtk2hs/cairo/demo/Drawing.hs)
+* highlightPangoLayoutを作ってshowLayoutでソースコードを色付き表示
+  (参考: gtk2hs/cairo/demo/Drawing.hs)
+  layoutSetMarkupを使えばpango markup使えそう
 * markdown内コード実行
 * androidカメラを直接リアルタイムにスライド表示
 * libreofficeのodgファイルをunoconvコマンドで自動変換

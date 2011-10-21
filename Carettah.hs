@@ -65,9 +65,8 @@ blockToSlide blockss = map go blockss
         go' [P.Plain strs] =
           \ypos -> renderTextM (CairoPosition tcx) (CairoPosition ypos) tcs ("☆ " ++ inlinesToString strs)
         go' x = error $ show x -- 一部のみをサポート
-    go (P.CodeBlock (_, _, _) ss) = \y -> yposSequence y $ map go' (lines ss)
-      where
-        go' s ypos = renderTextG (CairoPosition $ tcx + tcbo) (CairoPosition ypos) tcbs s
+    go (P.CodeBlock (_, _, _) ss) = \y ->
+      renderLayoutG (CairoPosition $ tcx + tcbo) (CairoPosition y) tcbs ss
     go (P.Para strs) =
       \y -> renderTextM (CairoPosition tcx) (CairoPosition y) tcs (inlinesToString strs)
     go x = error $ show x -- 一部のみをサポート
