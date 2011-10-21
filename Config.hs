@@ -139,7 +139,7 @@ gCfg :: Config
 gCfg = Config {
   canvasW   = 640,
   canvasH  = 480,
-  alphaBackG = 0.5,
+  alphaBackG = 0.4,
   textTitleCoverY = 170,
   textTitleCoverSize = 40,
   textContextCoverY = 300,

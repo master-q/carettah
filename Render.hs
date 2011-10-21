@@ -1,6 +1,6 @@
 module Render (clearCanvas, CairoPosition(..), CairoSize(..), toDouble,
                renderWave, renderTurtle, renderPngFit, renderPngInline,
-               renderText, yposSequence, renderSlide) where
+               renderTextM, renderTextG, yposSequence, renderSlide) where
 import Data.Char
 import Data.Bits
 import qualified Data.MemoUgly as M
@@ -47,15 +47,15 @@ toUTF (x:xs) | ord x<=0x007F = x:toUTF xs
 toDouble :: Integral a => a -> Double
 toDouble = fromIntegral
 
-mySetFontSize :: Double -> C.Render ()
-mySetFontSize fsize = do
-  C.selectFontFace (toUTF "Takao P明朝") C.FontSlantNormal C.FontWeightNormal
+mySetFontSize :: String -> Double -> C.Render ()
+mySetFontSize fname fsize = do
+  C.selectFontFace (toUTF fname) C.FontSlantNormal C.FontWeightNormal
   C.setFontSize fsize
 
-renderText :: CairoPosition -> CairoPosition -> Double -> String -> C.Render Double
-renderText x y fsize text = do
+renderText' :: String -> CairoPosition -> CairoPosition -> Double -> String -> C.Render Double
+renderText' fname x y fsize text = do
   C.save
-  mySetFontSize fsize
+  mySetFontSize fname fsize
   (C.TextExtents _ yb w h _ _) <- C.textExtents (toUTF text)
   C.restore
   let truePosition (CairoPosition x') (CairoPosition y') = return (x', y')
@@ -66,11 +66,16 @@ renderText x y fsize text = do
   (xt, yt) <- truePosition x y
   let nypos = yt + h - yb
   C.save
-  mySetFontSize fsize
+  mySetFontSize fname fsize
   C.moveTo xt nypos
   C.textPath $ toUTF text
   C.fill >> C.stroke >> C.restore
   return nypos
+
+renderTextG :: CairoPosition -> CairoPosition -> Double -> String -> C.Render Double
+renderTextG = renderText' "TakaoExゴシック"
+renderTextM :: CairoPosition -> CairoPosition -> Double -> String -> C.Render Double
+renderTextM = renderText' "Takao P明朝"
 
 renderSurface :: Double -> Double -> Double -> C.Surface -> C.Render ()
 renderSurface x y alpha surface = do
@@ -150,7 +155,7 @@ renderWave = do
       speechSec = 60 * smin
       charMax = waveCharMax gCfg
       numChar = round $ charMax * sec / speechSec
-  _ <- renderText (CairoPosition 0) (CairoPosition $ ch - ws) ws $ replicate numChar '>'
+  _ <- renderTextM (CairoPosition 0) (CairoPosition $ ch - ws) ws $ replicate numChar '>'
   return ()
 
 renderTurtle :: Double -> C.Render ()
