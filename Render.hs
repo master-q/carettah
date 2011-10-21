@@ -119,11 +119,12 @@ renderPngInline = memo6 f
               scale = if wratio > hratio then hratio * 0.95 else wratio * 0.95
               tiw = diw * scale
               tih = dih * scale
+              y' = y + 10
           C.scale scale scale
-          renderSurface ((cw / 2 - tiw / 2) / scale) (y / scale) alpha surface
+          renderSurface ((cw / 2 - tiw / 2) / scale) (y' / scale) alpha surface
           C.surfaceFinish surface
           C.restore
-          return $ y + tih
+          return $ y' + tih
         f _ _ _ _ _ _ = return 0 -- xxx renerPngFit統合して一関数にすべき
 
 renderPngFit :: Double -> FilePath -> C.Render ()
