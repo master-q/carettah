@@ -1,11 +1,9 @@
 # CairoでほっかりGUIプログラミング
-
 ![background](start_haskell.png)
 
 Kiwamu Okabe
 
 # 自己紹介
-
 ![background](enjoy.png)
 
 * twitter: http://twitter/master_q
@@ -56,10 +54,14 @@ https://gitorious.org/carettah ← コレ
 ~~~ { .markdown }
 # CairoでほっかりGUIプログラミング
 ![background](start_haskell.png)
+
 Kiwamu Okabe
+
 # 自己紹介
 ![background](enjoy.png)
-* twitter: http://twitter/master_q ...
+
+* twitter: http://twitter/master_q
+* 職業: コピペプログラマ
 ~~~
 
 ファイル名sample.mdで保存。
@@ -73,7 +75,7 @@ Kiwamu Okabe
 ~~~ { .command }
 $ pwd
 /home/hogehoge/src/carettah
-$ ./carettah sample.md
+$ carettah sample.md
 ~~~
 
 すればプレゼン開始。
