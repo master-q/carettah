@@ -69,7 +69,7 @@ renderLayoutG x y fsize text = do
   ctxt <- liftIO $ G.cairoCreateContext Nothing
   txt <- liftIO $ G.layoutEmpty ctxt
   liftIO $ G.layoutSetText txt text
-  let truePosition (CairoPosition x') (CairoPosition y') = return (x', y' + 10)
+  let truePosition (CairoPosition x') (CairoPosition y') = return (x', y' + 20)
       truePosition x' y' =
         error $ "called with x=" ++ show x' ++ " y=" ++ show y'
   (xt, yt) <- truePosition x y
