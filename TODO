@@ -12,7 +12,6 @@
 * man作成
 * pangoでmonospaceフォントを使わないとインデントが変
 * Graphics.Rendering.CairoとGraphics.UI.Gtkを再調整。Cairoは統合された？
-* -nオプションでmarkdownひな形ファイルを作る
 * turtle.pngをwiiリモコンに合わせて回転
 * wiiリモコンをふりおろしたらスライドを切って、次ページへ
 * yposSequenceのまわりをStateモナドで書き直す

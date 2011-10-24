@@ -1,5 +1,5 @@
 Name:                   carettah
-Version:                0.0.6
+Version:                0.0.7
 Author:                 Kiwamu Okabe <kiwamu@debian.or.jp>
 Maintainer:             Kiwamu Okabe <kiwamu@debian.or.jp>
 License:                GPL-2
@@ -13,7 +13,7 @@ Build-Type:             Simple
 Homepage:               http://carettah.masterq.net/
 Tested-with:            GHC == 7.0.4
 
-data-files:             data/turtle.png
+data-files:             data/turtle.png, data/debian.png
 
 Executable              carettah
   hs-source-dirs:       .
@@ -22,6 +22,7 @@ Executable              carettah
                         filepath,
                         time,
                         mtl,
+                        directory,
                         pandoc,
                         gtk,
                         cairo,

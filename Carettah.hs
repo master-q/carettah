@@ -7,6 +7,8 @@ import System.Exit
 import Data.Time
 import Data.Maybe
 import Data.Version (showVersion)
+import System.FilePath ((</>),(<.>))
+import System.Directory (copyFile)
 import Control.Monad.Reader
 --import Control.Monad.State
 --import Control.Monad.Trans
@@ -116,6 +118,9 @@ options =
   , Option "i"     ["info"]
     (NoArg (\ opts -> opts { optSlideInfo = True }))
     "show slide infomation"
+  , Option "n"     ["new-slide"]
+    (NoArg (\ opts -> opts { optNewTemp = True }))
+    "create a new slide file and open it"
   ]
 
 carettahOpts :: [String] -> IO (Options, [String])
@@ -203,6 +208,24 @@ main = do
   updateRenderdTime
   -- getopts
   (opts, filen:_) <- carettahOpts =<< getArgs
+  -- create file if -n option
+  case opts of
+    (Options {optNewTemp = True}) ->
+      do tf <- wrapGetDataFileName $ "data" </> "turtle" <.> "png"
+         copyFile tf ("turtle" <.> "png")
+         df <- wrapGetDataFileName $ "data" </> "debian" <.> "png"
+         copyFile df ("debian" <.> "png")
+         writeFile filen ns
+           where ns = "\
+\# Presentation Title\n\
+\![background](debian.png)\n\n\
+\Your Name\n\n\
+\# Slide Title\n\
+\* item1\n\
+\* item2\n\
+\* item3\n\n\
+\![inline](turtle.png)\n"
+    _ -> return ()
   -- setup slide
   updateMarkdownFname $ const filen
   loadMarkdown filen

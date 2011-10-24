@@ -17,6 +17,7 @@ data Options = Options { optWiimote   :: Bool
                        , optPdfOutput :: Maybe FilePath
                        , optTime      :: Maybe Double
                        , optSlideInfo :: Bool
+                       , optNewTemp   :: Bool
                        } deriving Show
 
 defaultOptions :: Options
@@ -24,6 +25,7 @@ defaultOptions = Options { optWiimote   = False
                          , optPdfOutput = Nothing
                          , optTime      = Just 5
                          , optSlideInfo = False
+                         , optNewTemp   = False
                          }
 
 data WiiHandle = NoWiiHandle | WiiHandle CWiidWiimote
