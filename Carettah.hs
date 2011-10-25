@@ -10,8 +10,6 @@ import Data.Version (showVersion)
 import System.FilePath ((</>),(<.>))
 import System.Directory (copyFile)
 import Control.Monad.Reader
---import Control.Monad.State
---import Control.Monad.Trans
 import qualified Graphics.UI.Gtk as G
 import qualified Graphics.Rendering.Cairo as C
 import qualified Text.Pandoc as P

@@ -95,7 +95,13 @@ pngSurfaceSize file = do
   surface <- liftIO $ C.imageSurfaceCreateFromPNG file
   w <- C.imageSurfaceGetWidth surface
   h <- C.imageSurfaceGetHeight surface
-  return (surface, w, h)
+  if (w, h) == (0, 0)
+    then do fn <- liftIO . wrapGetDataFileName $ "data" </> "turtle" <.> "png"
+            surface' <- liftIO $ C.imageSurfaceCreateFromPNG fn
+            w' <- C.imageSurfaceGetWidth surface'
+            h' <- C.imageSurfaceGetHeight surface'
+            return (surface', w', h')
+    else return (surface, w, h)
 
 renderPngSize :: Double -> Double -> Double -> Double -> Double -> FilePath -> C.Render Double
 renderPngSize = f
