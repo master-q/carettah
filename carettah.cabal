@@ -13,7 +13,7 @@ Build-Type:             Simple
 Homepage:               http://carettah.masterq.net/
 Tested-with:            GHC == 7.0.4
 
-data-files:             data/turtle.png, data/debian.png
+data-files:             data/turtle.png, data/debian.png, data/notfound.png
 
 Executable              carettah
   hs-source-dirs:       .

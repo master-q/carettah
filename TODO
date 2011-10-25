@@ -1,5 +1,3 @@
-* [bug] 表示中の画像ファイルを消すと例外落ちしてしまう
-  carettah: user error (invalid matrix (not invertible))
 * pngnqコマンドを呼び出してpngファイルを圧縮するオプション
 * 文字の周りを白縁にする
 * キーバインド追加 space, back space

@@ -96,7 +96,7 @@ pngSurfaceSize file = do
   w <- C.imageSurfaceGetWidth surface
   h <- C.imageSurfaceGetHeight surface
   if (w, h) == (0, 0)
-    then do fn <- liftIO . wrapGetDataFileName $ "data" </> "turtle" <.> "png"
+    then do fn <- liftIO . wrapGetDataFileName $ "data" </> "notfound" <.> "png"
             surface' <- liftIO $ C.imageSurfaceCreateFromPNG fn
             w' <- C.imageSurfaceGetWidth surface'
             h' <- C.imageSurfaceGetHeight surface'
