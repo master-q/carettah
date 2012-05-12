@@ -59,16 +59,16 @@ blockToSlide blockss = map go blockss
       \y -> renderPngInline CairoCenter (CairoPosition y) CairoFit
             CairoFit 1 pngfile
     go (P.Header 1 strs) =
-      \y -> renderTextM CairoCenter (CairoPosition tty) tts (inlinesToString strs) >> return y
+      \y -> renderLayoutM CairoCenter (CairoPosition tty) tts (inlinesToString strs) >> return y
     go (P.BulletList plains) = \y -> yposSequence y $ map go' plains
       where
         go' [P.Plain strs] =
-          \ypos -> renderTextM (CairoPosition tcx) (CairoPosition ypos) tcs ("☆ " ++ inlinesToString strs)
+          \ypos -> renderLayoutM (CairoPosition tcx) (CairoPosition ypos) tcs ("☆ " ++ inlinesToString strs)
         go' x = error $ show x -- 一部のみをサポート
     go (P.CodeBlock (_, _, _) ss) = \y ->
       renderLayoutG (CairoPosition $ tcx + tcbo) (CairoPosition y) tcbs ss
     go (P.Para strs) =
-      \y -> renderTextM (CairoPosition tcx) (CairoPosition y) tcs (inlinesToString strs)
+      \y -> renderLayoutM (CairoPosition tcx) (CairoPosition y) tcs (inlinesToString strs)
     go x = error $ show x -- 一部のみをサポート
 
 -- スライド表紙をRender
@@ -84,9 +84,9 @@ coverSlide blocks = map go blocks
     go (P.Para [P.Image [P.Str "background"] (pngfile, _)]) =
       \y -> renderPngFit ag pngfile >> return y
     go (P.Header 1 strs) =
-      \y -> renderTextM CairoCenter (CairoPosition ttcy) ttcs (inlinesToString strs) >> return y
+      \y -> renderLayoutM CairoCenter (CairoPosition ttcy) ttcs (inlinesToString strs) >> return y
     go (P.Para strs) =
-      \y -> renderTextM CairoCenter (CairoPosition tccy) tccs (inlinesToString strs) >> return y
+      \y -> renderLayoutM CairoCenter (CairoPosition tccy) tccs (inlinesToString strs) >> return y
     go x = error $ show x -- 一部のみをサポート
 
 updateCanvas :: G.DrawingArea -> IO ()

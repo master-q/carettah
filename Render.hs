@@ -1,7 +1,7 @@
 module Render (clearCanvas, CairoPosition(..), CairoSize(..), toDouble,
                renderWave, renderTurtle, renderPngFit, renderPngInline,
-               renderTextM, renderTextG, renderLayoutG, yposSequence,
-               renderSlide) where
+               renderTextM, renderTextG, renderLayoutG, renderLayoutM,
+               yposSequence, renderSlide) where
 import Data.Char
 import Data.Bits
 import System.FilePath ((</>),(<.>))
@@ -63,25 +63,31 @@ renderTextG = renderText' "TakaoExゴシック"
 renderTextM :: CairoPosition -> CairoPosition -> Double -> String -> C.Render Double
 renderTextM = renderText' "Takao P明朝"
 
-renderLayoutG :: CairoPosition -> CairoPosition -> Double -> String -> C.Render Double
-renderLayoutG x y fsize text = do
+renderLayout' :: String -> CairoPosition -> CairoPosition -> Double -> String -> C.Render Double
+renderLayout' fname x y fsize text = do
   C.save
   ctxt <- liftIO $ G.cairoCreateContext Nothing
   txt <- liftIO $ G.layoutEmpty ctxt
   liftIO $ G.layoutSetText txt text
-  let truePosition (CairoPosition x') (CairoPosition y') = return (x', y' + 20)
+  fd <- liftIO G.fontDescriptionNew
+  liftIO $ G.fontDescriptionSetSize fd fsize
+  liftIO $ G.fontDescriptionSetFamily fd fname
+  liftIO $ G.layoutSetFontDescription txt (Just fd)
+  (_, G.PangoRectangle _ _ lw lh) <-
+    liftIO $ G.layoutGetExtents txt -- xxx inkとlogicalの違いは？
+  let truePosition (CairoPosition x') (CairoPosition y') = return (x', y' + fsize)
+      truePosition CairoCenter (CairoPosition y') =
+        return (toDouble (canvasW gCfg) / 2 - lw / 2, y')
       truePosition x' y' =
         error $ "called with x=" ++ show x' ++ " y=" ++ show y'
   (xt, yt) <- truePosition x y
   C.moveTo xt yt
-  fd <- liftIO G.fontDescriptionNew
-  liftIO $ G.fontDescriptionSetSize fd fsize
-  liftIO $ G.layoutSetFontDescription txt (Just fd)
-  (_, G.PangoRectangle _ _ _ lh) <-
-    liftIO $ G.layoutGetExtents txt -- xxx inkとlogicalの違いは？
   G.showLayout txt
   C.restore
   return $ yt + lh
+
+renderLayoutG = renderLayout' "モトヤLマルベリ3等幅"
+renderLayoutM = renderLayout' "IPA P明朝"
 
 renderSurface :: Double -> Double -> Double -> C.Surface -> C.Render ()
 renderSurface x y alpha surface = do
@@ -167,7 +173,7 @@ renderWave = do
       speechSec = 60 * smin
       charMax = waveCharMax gCfg
       numChar = round $ charMax * sec / speechSec
-  _ <- renderTextM (CairoPosition 0) (CairoPosition $ ch - ws) ws $ replicate numChar '>'
+  _ <- renderLayoutM (CairoPosition 0) (CairoPosition $ ch - ws * 2) ws $ replicate numChar '>'
   return ()
 
 renderTurtle :: Double -> C.Render ()
