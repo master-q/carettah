@@ -65,8 +65,8 @@ blockToSlide blockss = map go blockss
         go' [P.Plain strs] =
           \ypos -> renderLayoutM (CPosition tcx, CPosition ypos) tcs ("☆ " ++ inlinesToString strs)
         go' x = error $ show x -- 一部のみをサポート
-    go (P.CodeBlock (_, _, _) ss) = \y ->
-      renderLayoutG (CPosition $ tcx + tcbo, CPosition y) tcbs ss
+    go (P.CodeBlock attr ss) = \y ->
+      renderLayoutG attr (CPosition $ tcx + tcbo, CPosition y) tcbs ss
     go (P.Para strs) =
       \y -> renderLayoutM (CPosition tcx, CPosition y) tcs (inlinesToString strs)
     go x = error $ show x -- 一部のみをサポート

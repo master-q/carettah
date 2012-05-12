@@ -13,9 +13,6 @@
 * turtle.pngをwiiリモコンに合わせて回転
 * wiiリモコンをふりおろしたらスライドを切って、次ページへ
 * yposSequenceのまわりをStateモナドで書き直す
-* highlightPangoLayoutを作ってshowLayoutでソースコードを色付き表示
-  (参考: gtk2hs/cairo/demo/Drawing.hs)
-  layoutSetMarkupを使えばpango markup使えそう
 * markdown内コード実行
 * androidカメラを直接リアルタイムにスライド表示
 * libreofficeのodgファイルをunoconvコマンドで自動変換

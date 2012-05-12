@@ -3,10 +3,13 @@ module Render (clearCanvas, CPosition(..), CSize(..), toDouble,
                renderLayoutG, renderLayoutM,
                yposSequence, renderSlide) where
 import System.FilePath ((</>),(<.>))
+import Control.Monad
 import Control.Monad.Reader
+import Text.Pandoc (Attr)
 import qualified Graphics.UI.Gtk as G
 import qualified Graphics.Rendering.Cairo as C
 --
+import FormatPangoMarkup
 import Config
 import WrapPaths (wrapGetDataFileName)
 
@@ -20,12 +23,14 @@ type CWl = (CSize, CSize)
 toDouble :: Integral a => a -> Double
 toDouble = fromIntegral
 
-renderLayout' :: String -> CXy -> Double -> String -> C.Render Double
-renderLayout' fname (x, y) fsize text = do
+type LayoutFunc = G.PangoLayout -> G.Markup -> IO ()
+
+renderLayout' :: String -> LayoutFunc -> CXy -> Double -> String -> C.Render Double
+renderLayout' fname lFun (x, y) fsize text = do
   C.save
   (txt, lw, lh) <- liftIO $ do
     txt <- G.cairoCreateContext Nothing >>= G.layoutEmpty
-    G.layoutSetText txt text
+    lFun txt text
     fd <- liftIO G.fontDescriptionNew
     G.fontDescriptionSetSize fd fsize
     G.fontDescriptionSetFamily fd fname
@@ -44,9 +49,17 @@ renderLayout' fname (x, y) fsize text = do
   C.restore
   return $ yt + lh
 
-renderLayoutG, renderLayoutM :: CXy -> Double -> String -> C.Render Double
-renderLayoutG = renderLayout' "モトヤLマルベリ3等幅"
-renderLayoutM = renderLayout' "IPA P明朝"
+renderLayoutM :: CXy -> Double -> String -> C.Render Double
+renderLayoutM = renderLayout' "IPA P明朝" G.layoutSetText
+
+renderLayoutG :: Attr -> CXy -> Double -> String -> C.Render Double
+renderLayoutG (_, [], _) xy fs txt = 
+  renderLayout' "モトヤLマルベリ3等幅" G.layoutSetText xy fs txt
+renderLayoutG (_, classs, _) xy fs txt =
+  renderLayout' "モトヤLマルベリ3等幅" f xy fs txt'
+    where
+      txt' = formatPangoMarkup (head classs) txt
+      f l t = void $ G.layoutSetMarkup l t
 
 renderSurface :: Double -> Double -> Double -> C.Surface -> C.Render ()
 renderSurface x y alpha surface = do
