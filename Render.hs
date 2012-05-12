@@ -1,4 +1,4 @@
-module Render (clearCanvas, CairoPosition(..), CairoSize(..), toDouble,
+module Render (clearCanvas, CPosition(..), CSize(..), toDouble,
                renderWave, renderTurtle, renderPngFit, renderPngInline,
                renderLayoutG, renderLayoutM,
                yposSequence, renderSlide) where
@@ -10,16 +10,18 @@ import qualified Graphics.Rendering.Cairo as C
 import Config
 import WrapPaths (wrapGetDataFileName)
 
-data CairoPosition = CairoPosition Double | CairoCenter
-                   deriving (Show, Eq, Ord)
-data CairoSize = CairoSize Double | CairoFit
-                   deriving (Show, Eq, Ord)
+data CPosition = CPosition Double | CCenter
+               deriving (Show, Eq, Ord)
+data CSize = CSize Double | CFit
+           deriving (Show, Eq, Ord)
+type CXy = (CPosition, CPosition)
+type CWl = (CSize, CSize)
 
 toDouble :: Integral a => a -> Double
 toDouble = fromIntegral
 
-renderLayout' :: String -> CairoPosition -> CairoPosition -> Double -> String -> C.Render Double
-renderLayout' fname x y fsize text = do
+renderLayout' :: String -> CXy -> Double -> String -> C.Render Double
+renderLayout' fname (x, y) fsize text = do
   C.save
   ctxt <- liftIO $ G.cairoCreateContext Nothing
   txt <- liftIO $ G.layoutEmpty ctxt
@@ -30,8 +32,8 @@ renderLayout' fname x y fsize text = do
   liftIO $ G.layoutSetFontDescription txt (Just fd)
   (_, G.PangoRectangle _ _ lw lh) <-
     liftIO $ G.layoutGetExtents txt -- xxx inkとlogicalの違いは？
-  let truePosition (CairoPosition x') (CairoPosition y') = return (x', y' + fsize)
-      truePosition CairoCenter (CairoPosition y') =
+  let truePosition (CPosition x') (CPosition y') = return (x', y' + fsize)
+      truePosition CCenter (CPosition y') =
         return (toDouble (canvasW gCfg) / 2 - lw / 2, y')
       truePosition x' y' =
         error $ "called with x=" ++ show x' ++ " y=" ++ show y'
@@ -41,7 +43,7 @@ renderLayout' fname x y fsize text = do
   C.restore
   return $ yt + lh
 
-renderLayoutG, renderLayoutM :: CairoPosition -> CairoPosition -> Double -> String -> C.Render Double
+renderLayoutG, renderLayoutM :: CXy -> Double -> String -> C.Render Double
 renderLayoutG = renderLayout' "モトヤLマルベリ3等幅"
 renderLayoutM = renderLayout' "IPA P明朝"
 
@@ -78,9 +80,9 @@ renderPngSize = f
           C.restore
           return $ y + h
 
-renderPngInline :: CairoPosition -> CairoPosition -> CairoSize -> CairoSize -> Double -> FilePath -> C.Render Double
+renderPngInline :: CXy -> CWl -> Double -> FilePath -> C.Render Double
 renderPngInline = f
-  where f CairoCenter (CairoPosition y) CairoFit CairoFit alpha file = do
+  where f (CCenter, CPosition y) (CFit, CFit) alpha file = do
           C.save
           (surface, iw, ih) <- pngSurfaceSize file
           let diw = toDouble iw
@@ -98,7 +100,7 @@ renderPngInline = f
           C.surfaceFinish surface
           C.restore
           return $ y' + tih
-        f _ _ _ _ _ _ = return 0 -- xxx renerPngFit統合して一関数にすべき
+        f _ _ _ _ = return 0 -- xxx renerPngFit統合して一関数にすべき
 
 renderPngFit :: Double -> FilePath -> C.Render ()
 renderPngFit = f
@@ -129,7 +131,7 @@ renderWave = do
       speechSec = 60 * smin
       charMax = waveCharMax gCfg
       numChar = round $ charMax * sec / speechSec
-  _ <- renderLayoutM (CairoPosition 0) (CairoPosition $ ch - ws * 2) ws $ replicate numChar '>'
+  _ <- renderLayoutM (CPosition 0, CPosition $ ch - ws * 2) ws $ replicate numChar '>'
   return ()
 
 renderTurtle :: Double -> C.Render ()
