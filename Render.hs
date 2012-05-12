@@ -148,7 +148,7 @@ renderWave = do
       speechSec = 60 * smin
       charMax = waveCharMax gCfg
       numChar = round $ charMax * sec / speechSec
-  _ <- renderLayoutM (CPosition 0, CPosition $ ch - ws * 2) ws $ replicate numChar '>'
+  void $ renderLayoutM (CPosition 0, CPosition $ ch - ws * 2) ws $ replicate numChar '>'
   return ()
 
 renderTurtle :: Double -> C.Render ()
@@ -170,7 +170,7 @@ renderSlideFilter w h s = do
       ch = toDouble $ canvasH gCfg
       tcy = textContextY gCfg
   C.scale (toDouble w / cw) (toDouble h / ch)
-  _ <- yposSequence tcy s
+  void $ yposSequence tcy s
   renderWave
 
 renderSlide :: [[Double -> C.Render Double]] -> Int -> Int -> Int -> C.Render ()

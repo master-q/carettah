@@ -9,6 +9,7 @@ module Config (Config(..), Options(..), CarettahState(..),
 import Data.IORef
 import Data.Time
 import System.IO.Unsafe (unsafePerformIO)
+import Control.Monad
 import Control.Monad.Reader
 import qualified Graphics.Rendering.Cairo as C
 import System.CWiid
@@ -93,8 +94,8 @@ setWiiHandle won
       Nothing  -> putStrLn "not found..."
       Just wmj -> do
         putStrLn "found!"
-        _ <- cwiidSetRptMode wmj
-        _ <- cwiidSetLed wmj
+        void $ cwiidSetRptMode wmj
+        void $ cwiidSetLed wmj
         updateCarettahState (\s -> s { wiiHandle = WiiHandle wmj })
   | otherwise = return ()
 

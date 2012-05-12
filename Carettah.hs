@@ -9,6 +9,7 @@ import Data.Maybe
 import Data.Version (showVersion)
 import System.FilePath ((</>),(<.>))
 import System.Directory (copyFile)
+import Control.Monad
 import Control.Monad.Reader
 import qualified Graphics.UI.Gtk as G
 import qualified Graphics.Rendering.Cairo as C
@@ -43,7 +44,7 @@ inlinesToString = foldr go ""
 
 -- 二枚目以降のスライドをRender
 blockToSlide :: [P.Block] -> [Double -> C.Render Double]
-blockToSlide blockss = map go blockss
+blockToSlide = map go
   where
     ag = alphaBackG gCfg
     tty = textTitleY gCfg
@@ -73,7 +74,7 @@ blockToSlide blockss = map go blockss
 
 -- スライド表紙をRender
 coverSlide :: [P.Block] -> [Double -> C.Render Double]
-coverSlide blocks = map go blocks
+coverSlide = map go
   where
     ag = alphaBackG gCfg
     ttcy = textTitleCoverY gCfg
@@ -146,12 +147,12 @@ startPresentation wiiOn presenTime = do
   setWiiHandle wiiOn
   updateSpeechMinutes $ const presenTime
   -- start GUI
-  _ <- G.initGUI
+  void G.initGUI
   window <- G.windowNew
   canvas <- G.drawingAreaNew
   G.widgetSetSizeRequest window (canvasW gCfg) (canvasH gCfg)
   -- key event
-  _ <- window `G.on` G.keyPressEvent $ G.tryEvent $ do
+  void $ window `G.on` G.keyPressEvent $ G.tryEvent $ do
     keyName <- G.eventKeyName
     liftIO $
       case keyName of
@@ -166,27 +167,27 @@ startPresentation wiiOn presenTime = do
                   loadMarkdown md
                   curPage >> G.widgetQueueDraw canvas
         _   -> return ()
-  _ <- G.onDestroy window G.mainQuit
-  _ <- G.onExpose canvas $ const (updateCanvas canvas >> return True)
-  _ <- G.timeoutAdd (do rtime <- queryCarettahState renderdTime
-                        ntime <- getCurrentTime
-                        let dtime :: Double
-                            dtime = (fromRational . toRational) $
-                                    diffUTCTime ntime rtime
-                        if dtime > 5 then G.widgetQueueDraw canvas >>
-                                          return True else do
-                          bf <- queryCarettahState wiiBtnFlag
-                          af <- updateWiiBtnFlag
-                          let bs = af `diffCwiidBtnFlag` bf
-                              go b | b == cwiidBtnA = nextPage >> G.widgetQueueDraw canvas
-                                   | b == cwiidBtnB = prevPage >> G.widgetQueueDraw canvas
-                                   | b == cwiidBtnUp = topPage >> G.widgetQueueDraw canvas
-                                   | b == cwiidBtnDown = endPage >> G.widgetQueueDraw canvas
-                                   | b == cwiidBtnPlus = G.windowFullscreen window
-                                   | b == cwiidBtnMinus = G.windowUnfullscreen window
-                                   | otherwise = return ()
-                          go bs
-                          return True) 50
+  void $ G.onDestroy window G.mainQuit
+  void $ G.onExpose canvas $ const (updateCanvas canvas >> return True)
+  void $ G.timeoutAdd (do rtime <- queryCarettahState renderdTime
+                          ntime <- getCurrentTime
+                          let dtime :: Double
+                              dtime = (fromRational . toRational) $
+                                      diffUTCTime ntime rtime
+                          if dtime > 5 then G.widgetQueueDraw canvas >>
+                                            return True else do
+                            bf <- queryCarettahState wiiBtnFlag
+                            af <- updateWiiBtnFlag
+                            let bs = af `diffCwiidBtnFlag` bf
+                                go b | b == cwiidBtnA = nextPage >> G.widgetQueueDraw canvas
+                                     | b == cwiidBtnB = prevPage >> G.widgetQueueDraw canvas
+                                     | b == cwiidBtnUp = topPage >> G.widgetQueueDraw canvas
+                                     | b == cwiidBtnDown = endPage >> G.widgetQueueDraw canvas
+                                     | b == cwiidBtnPlus = G.windowFullscreen window
+                                     | b == cwiidBtnMinus = G.windowUnfullscreen window
+                                     | otherwise = return ()
+                            go bs
+                            return True) 50
   G.set window [G.containerChild G.:= canvas]
   G.widgetShowAll window
   updateStartTime
