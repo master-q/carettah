@@ -1,9 +1,7 @@
 module Render (clearCanvas, CairoPosition(..), CairoSize(..), toDouble,
                renderWave, renderTurtle, renderPngFit, renderPngInline,
-               renderTextM, renderTextG, renderLayoutG, renderLayoutM,
+               renderLayoutG, renderLayoutM,
                yposSequence, renderSlide) where
-import Data.Char
-import Data.Bits
 import System.FilePath ((</>),(<.>))
 import Control.Monad.Reader
 import qualified Graphics.UI.Gtk as G
@@ -17,51 +15,8 @@ data CairoPosition = CairoPosition Double | CairoCenter
 data CairoSize = CairoSize Double | CairoFit
                    deriving (Show, Eq, Ord)
 
--- copy from System.Glib.UTFString (gtk2hs/glib/System/Glib/UTFString.hs)
--- 本来はCStringを使うとこに埋め込んどくべき。gtk2hsを参考に
-toUTF :: String -> String
-toUTF [] = []
-toUTF (x:xs) | ord x<=0x007F = x:toUTF xs
-	     | ord x<=0x07FF = chr (0xC0 .|. ((ord x `shift` (-6)) .&. 0x1F)):
-			       chr (0x80 .|. (ord x .&. 0x3F)):
-			       toUTF xs
-	     | otherwise     = chr (0xE0 .|. ((ord x `shift` (-12)) .&. 0x0F)):
-			       chr (0x80 .|. ((ord x `shift` (-6)) .&. 0x3F)):
-			       chr (0x80 .|. (ord x .&. 0x3F)):
-			       toUTF xs
-
 toDouble :: Integral a => a -> Double
 toDouble = fromIntegral
-
-mySetFontSize :: String -> Double -> C.Render ()
-mySetFontSize fname fsize = do
-  C.selectFontFace (toUTF fname) C.FontSlantNormal C.FontWeightNormal
-  C.setFontSize fsize
-
-renderText' :: String -> CairoPosition -> CairoPosition -> Double -> String -> C.Render Double
-renderText' fname x y fsize text = do
-  C.save
-  mySetFontSize fname fsize
-  (C.TextExtents _ yb w h _ _) <- C.textExtents (toUTF text)
-  C.restore
-  let truePosition (CairoPosition x') (CairoPosition y') = return (x', y')
-      truePosition CairoCenter (CairoPosition y') =
-          return (toDouble (canvasW gCfg) / 2 - w / 2, y')
-      truePosition x' y' =
-        error $ "called with x=" ++ show x' ++ " y=" ++ show y'
-  (xt, yt) <- truePosition x y
-  let nypos = yt + h - yb
-  C.save
-  mySetFontSize fname fsize
-  C.moveTo xt nypos
-  C.textPath $ toUTF text
-  C.fill >> C.stroke >> C.restore
-  return nypos
-
-renderTextG :: CairoPosition -> CairoPosition -> Double -> String -> C.Render Double
-renderTextG = renderText' "TakaoExゴシック"
-renderTextM :: CairoPosition -> CairoPosition -> Double -> String -> C.Render Double
-renderTextM = renderText' "Takao P明朝"
 
 renderLayout' :: String -> CairoPosition -> CairoPosition -> Double -> String -> C.Render Double
 renderLayout' fname x y fsize text = do
@@ -86,6 +41,7 @@ renderLayout' fname x y fsize text = do
   C.restore
   return $ yt + lh
 
+renderLayoutG, renderLayoutM :: CairoPosition -> CairoPosition -> Double -> String -> C.Render Double
 renderLayoutG = renderLayout' "モトヤLマルベリ3等幅"
 renderLayoutM = renderLayout' "IPA P明朝"
 
