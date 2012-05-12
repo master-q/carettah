@@ -12,7 +12,7 @@ tagTok (BaseNTok, s)          = "<span foreground=\"#40a070\">" ++ escapeMarkup 
 tagTok (FloatTok, s)          = "<span foreground=\"#40a070\">" ++ escapeMarkup s ++ "</span>"
 tagTok (CharTok, s)           = "<span foreground=\"#4070a0\">" ++ escapeMarkup s ++ "</span>"
 tagTok (StringTok, s)         = "<span foreground=\"#4070a0\">" ++ escapeMarkup s ++ "</span>"
-tagTok (CommentTok, s)        = "<span foreground=\"#60a0b0\" font_style=\"italic\">" ++ escapeMarkup s ++ "</span>"
+tagTok (CommentTok, s)        = "<span foreground=\"#60a0b0\" background=\"lightgray\" font_style=\"italic\">" ++ escapeMarkup s ++ "</span>"
 tagTok (OtherTok, s)          = "<span foreground=\"#007020\">" ++ escapeMarkup s ++ "</span>"
 tagTok (AlertTok, s)          = "<span foreground=\"red\" font_weight=\"bold\">" ++ escapeMarkup s ++ "</span>"
 tagTok (FunctionTok, s)       = "<span foreground=\"#06287e\">" ++ escapeMarkup s ++ "</span>"
