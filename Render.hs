@@ -25,25 +25,31 @@ toDouble = fromIntegral
 
 type LayoutFunc = G.PangoLayout -> G.Markup -> IO ()
 
+stringToLayout :: String -> LayoutFunc -> Double -> String -> IO (G.PangoLayout, Double, Double)
+stringToLayout fname lFun fsize text = do
+  txt <- G.cairoCreateContext Nothing >>= G.layoutEmpty
+  void $ lFun txt text
+  fd <- liftIO G.fontDescriptionNew
+  G.fontDescriptionSetSize fd fsize
+  G.fontDescriptionSetFamily fd fname
+  G.layoutSetFontDescription txt (Just fd)
+  (_, G.PangoRectangle _ _ lw lh) <- G.layoutGetExtents txt
+  -- xxx inkとlogicalの違いは？
+  return (txt, lw, lh)
+
+truePosition :: Double -> Double -> (CPosition, CPosition) -> (Double, Double)
+truePosition fsize _ (CPosition x', CPosition y') =
+  (x', y' + fsize)
+truePosition _ lw (CCenter, CPosition y') =
+  (toDouble (canvasW gCfg) / 2 - lw / 2, y')
+truePosition _ _ (x', y') =
+  error $ "called with x=" ++ show x' ++ " y=" ++ show y'
+
 renderLayout' :: String -> LayoutFunc -> CXy -> Double -> String -> C.Render Double
 renderLayout' fname lFun (x, y) fsize text = do
   C.save
-  (txt, lw, lh) <- liftIO $ do
-    txt <- G.cairoCreateContext Nothing >>= G.layoutEmpty
-    lFun txt text
-    fd <- liftIO G.fontDescriptionNew
-    G.fontDescriptionSetSize fd fsize
-    G.fontDescriptionSetFamily fd fname
-    G.layoutSetFontDescription txt (Just fd)
-    (_, G.PangoRectangle _ _ lw lh) <- G.layoutGetExtents txt 
-    -- xxx inkとlogicalの違いは？
-    return (txt, lw, lh)
-  let truePosition (CPosition x') (CPosition y') = (x', y' + fsize)
-      truePosition CCenter (CPosition y') =
-        (toDouble (canvasW gCfg) / 2 - lw / 2, y')
-      truePosition x' y' =
-        error $ "called with x=" ++ show x' ++ " y=" ++ show y'
-      (xt, yt) = truePosition x y
+  (txt, lw, lh) <- liftIO $ stringToLayout fname lFun fsize text
+  let (xt, yt) = truePosition fsize lw (x, y)
   C.moveTo xt yt
   G.showLayout txt
   C.restore
