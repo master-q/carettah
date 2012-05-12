@@ -38,12 +38,12 @@ renderLayout' fname lFun (x, y) fsize text = do
     (_, G.PangoRectangle _ _ lw lh) <- G.layoutGetExtents txt 
     -- xxx inkとlogicalの違いは？
     return (txt, lw, lh)
-  let truePosition (CPosition x') (CPosition y') = return (x', y' + fsize)
+  let truePosition (CPosition x') (CPosition y') = (x', y' + fsize)
       truePosition CCenter (CPosition y') =
-        return (toDouble (canvasW gCfg) / 2 - lw / 2, y')
+        (toDouble (canvasW gCfg) / 2 - lw / 2, y')
       truePosition x' y' =
         error $ "called with x=" ++ show x' ++ " y=" ++ show y'
-  (xt, yt) <- truePosition x y
+      (xt, yt) = truePosition x y
   C.moveTo xt yt
   G.showLayout txt
   C.restore
@@ -52,11 +52,14 @@ renderLayout' fname lFun (x, y) fsize text = do
 renderLayoutM :: CXy -> Double -> String -> C.Render Double
 renderLayoutM = renderLayout' "IPA P明朝" G.layoutSetText
 
+renderLayoutG' :: LayoutFunc -> CXy -> Double -> String -> C.Render Double
+renderLayoutG' = renderLayout' "モトヤLマルベリ3等幅"
+
 renderLayoutG :: Attr -> CXy -> Double -> String -> C.Render Double
 renderLayoutG (_, [], _) xy fs txt = 
-  renderLayout' "モトヤLマルベリ3等幅" G.layoutSetText xy fs txt
+  renderLayoutG' G.layoutSetText xy fs txt
 renderLayoutG (_, classs, _) xy fs txt =
-  renderLayout' "モトヤLマルベリ3等幅" f xy fs txt'
+  renderLayoutG' f xy fs txt'
     where
       txt' = formatPangoMarkup (head classs) txt
       f l t = void $ G.layoutSetMarkup l t

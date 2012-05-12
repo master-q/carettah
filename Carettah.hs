@@ -25,11 +25,12 @@ markdown = P.readMarkdown P.defaultParserState{ P.stateStandalone = True }
 
 splitBlocks :: P.Pandoc -> [[P.Block]]
 splitBlocks (P.Pandoc _ blocks) = go blocks
-  where go (P.Header 1 h:xs) = let (b1, b2) = break (\a -> case a of
-                                                      (P.Header 1 _) -> True
-                                                      _ -> False) xs
-                             in (P.Header 1 h:b1):go b2
+  where go (P.Header 1 h:xs) =
+          let (b1, b2) = break check xs
+          in (P.Header 1 h:b1):go b2
         go _ = []
+        check (P.Header 1 _) = True
+        check _ = False
 
 backgroundTop :: [P.Block] -> [P.Block]
 backgroundTop blocks = filter go blocks ++ filter (not . go) blocks
