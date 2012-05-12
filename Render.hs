@@ -23,15 +23,16 @@ toDouble = fromIntegral
 renderLayout' :: String -> CXy -> Double -> String -> C.Render Double
 renderLayout' fname (x, y) fsize text = do
   C.save
-  ctxt <- liftIO $ G.cairoCreateContext Nothing
-  txt <- liftIO $ G.layoutEmpty ctxt
-  liftIO $ G.layoutSetText txt text
-  fd <- liftIO G.fontDescriptionNew
-  liftIO $ G.fontDescriptionSetSize fd fsize
-  liftIO $ G.fontDescriptionSetFamily fd fname
-  liftIO $ G.layoutSetFontDescription txt (Just fd)
-  (_, G.PangoRectangle _ _ lw lh) <-
-    liftIO $ G.layoutGetExtents txt -- xxx inkとlogicalの違いは？
+  (txt, lw, lh) <- liftIO $ do
+    txt <- G.cairoCreateContext Nothing >>= G.layoutEmpty
+    G.layoutSetText txt text
+    fd <- liftIO G.fontDescriptionNew
+    G.fontDescriptionSetSize fd fsize
+    G.fontDescriptionSetFamily fd fname
+    G.layoutSetFontDescription txt (Just fd)
+    (_, G.PangoRectangle _ _ lw lh) <- G.layoutGetExtents txt 
+    -- xxx inkとlogicalの違いは？
+    return (txt, lw, lh)
   let truePosition (CPosition x') (CPosition y') = return (x', y' + fsize)
       truePosition CCenter (CPosition y') =
         return (toDouble (canvasW gCfg) / 2 - lw / 2, y')
@@ -59,13 +60,16 @@ pngSurfaceSize file = do
   surface <- liftIO $ C.imageSurfaceCreateFromPNG file
   w <- C.imageSurfaceGetWidth surface
   h <- C.imageSurfaceGetHeight surface
-  if (w, h) == (0, 0)
-    then do fn <- liftIO . wrapGetDataFileName $ "data" </> "notfound" <.> "png"
-            surface' <- liftIO $ C.imageSurfaceCreateFromPNG fn
-            w' <- C.imageSurfaceGetWidth surface'
-            h' <- C.imageSurfaceGetHeight surface'
-            return (surface', w', h')
-    else return (surface, w, h)
+  ret surface w h
+  where
+    ret _ 0 0 = do 
+      surface' <- liftIO $ 
+                  wrapGetDataFileName ("data" </> "notfound" <.> "png") >>= 
+                  C.imageSurfaceCreateFromPNG
+      w' <- C.imageSurfaceGetWidth surface'
+      h' <- C.imageSurfaceGetHeight surface'
+      return (surface', w', h')
+    ret s w h = return (s, w, h)
 
 renderPngSize :: Double -> Double -> Double -> Double -> Double -> FilePath -> C.Render Double
 renderPngSize = f
