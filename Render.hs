@@ -24,11 +24,12 @@ toDouble :: Integral a => a -> Double
 toDouble = fromIntegral
 
 type LayoutFunc = G.PangoLayout -> G.Markup -> IO ()
+type LayoutFuncHemming = String -> CXy -> Double -> String -> IO (G.PangoLayout, G.PangoLayout, Double, Double)
 
 stringToLayout :: String -> LayoutFunc -> CXy -> Double -> String -> IO (G.PangoLayout, Double, Double)
-stringToLayout fname lFun (x, _) fsize text = do
+stringToLayout fname func (x, _) fsize text = do
   lay <- G.cairoCreateContext Nothing >>= G.layoutEmpty
-  void $ lFun lay text
+  void $ func lay text
   G.layoutSetWrap lay G.WrapPartialWords
   setAW lay x
   fd <- liftIO G.fontDescriptionNew
@@ -53,30 +54,46 @@ truePosition _ _ (CCenter, CPosition y') = (0, y')
 truePosition _ _ (x', y') =
   error $ "called with x=" ++ show x' ++ " y=" ++ show y'
 
-renderLayout' :: String -> LayoutFunc -> CXy -> Double -> String -> C.Render Double
-renderLayout' fname lFun (x, y) fsize text = do
+stringToLayoutBack :: LayoutFunc -> LayoutFunc -> LayoutFuncHemming
+stringToLayoutBack funcBack funcFront fname xy fsize text = do
+  (layB, _, _) <- stringToLayout fname funcBack xy fsize text
+  (lay, lw, lh) <- stringToLayout fname funcFront xy fsize text
+  return (layB, lay, lw, lh)
+
+renderLayout' :: String -> LayoutFuncHemming -> CXy -> Double -> String -> C.Render Double
+renderLayout' fname func (x, y) fsize text = do
   C.save
-  (lay, lw, lh) <- liftIO $ stringToLayout fname lFun (x, y) fsize text
+  (layB, lay, lw, lh) <- liftIO $ func fname (x, y) fsize text
   let (xt, yt) = truePosition fsize lw (x, y)
-  C.moveTo xt yt
-  G.showLayout lay
+  mapM_ (moveShowLayout layB) 
+    [(xt + xd, yt + yd) | xd <- [-0.7, 0.7], yd <- [-0.7, 0.7]]
+  moveShowLayout lay (xt, yt)
   C.restore
   return $ yt + lh
+  where
+    moveShowLayout l (x', y') = C.moveTo x' y' >> G.showLayout l
 
 renderLayoutM :: CXy -> Double -> String -> C.Render Double
-renderLayoutM = renderLayout' "IPA P明朝" G.layoutSetText
+renderLayoutM = 
+  renderLayout' "IPA P明朝" (stringToLayoutBack fb ff)
+  where
+    fb l t = void $ G.layoutSetMarkup l ("<span foreground=\"white\">" ++ G.escapeMarkup t ++ "</span>")
+    ff = G.layoutSetText
 
-renderLayoutG' :: LayoutFunc -> CXy -> Double -> String -> C.Render Double
+renderLayoutG' :: LayoutFuncHemming -> CXy -> Double -> String -> C.Render Double
 renderLayoutG' = renderLayout' "IPAゴシック"
 
 renderLayoutG :: Attr -> CXy -> Double -> String -> C.Render Double
 renderLayoutG (_, [], _) xy fs txt = 
-  renderLayoutG' G.layoutSetText xy fs txt
+  renderLayoutG' (stringToLayoutBack fb ff) xy fs txt
+  where
+    fb l t = void $ G.layoutSetMarkup l ("<span foreground=\"white\">" ++ G.escapeMarkup t ++ "</span>")
+    ff = G.layoutSetText
 renderLayoutG (_, classs, _) xy fs txt =
-  renderLayoutG' f xy fs txt'
-    where
-      txt' = formatPangoMarkup (head classs) txt
-      f l t = void $ G.layoutSetMarkup l t
+  renderLayoutG' (stringToLayoutBack fb ff) xy fs txt
+  where
+    fb l t = void $ G.layoutSetMarkup l (formatPangoMarkupWhite (head classs) t)
+    ff l t = void $ G.layoutSetMarkup l (formatPangoMarkup (head classs) t)
 
 renderSurface :: Double -> Double -> Double -> C.Surface -> C.Render ()
 renderSurface x y alpha surface = do
