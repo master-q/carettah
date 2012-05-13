@@ -25,33 +25,41 @@ toDouble = fromIntegral
 
 type LayoutFunc = G.PangoLayout -> G.Markup -> IO ()
 
-stringToLayout :: String -> LayoutFunc -> Double -> String -> IO (G.PangoLayout, Double, Double)
-stringToLayout fname lFun fsize text = do
-  txt <- G.cairoCreateContext Nothing >>= G.layoutEmpty
-  void $ lFun txt text
+stringToLayout :: String -> LayoutFunc -> CXy -> Double -> String -> IO (G.PangoLayout, Double, Double)
+stringToLayout fname lFun (x, _) fsize text = do
+  lay <- G.cairoCreateContext Nothing >>= G.layoutEmpty
+  void $ lFun lay text
+  G.layoutSetWrap lay G.WrapPartialWords
+  setAW lay x
   fd <- liftIO G.fontDescriptionNew
   G.fontDescriptionSetSize fd fsize
   G.fontDescriptionSetFamily fd fname
-  G.layoutSetFontDescription txt (Just fd)
-  (_, G.PangoRectangle _ _ lw lh) <- G.layoutGetExtents txt
+  G.layoutSetFontDescription lay (Just fd)
+  (_, G.PangoRectangle _ _ lw lh) <- G.layoutGetExtents lay
   -- xxx inkとlogicalの違いは？
-  return (txt, lw, lh)
+  return (lay, lw, lh)
+    where
+      screenW = toDouble (canvasW gCfg)
+      setAW lay CCenter = do
+        G.layoutSetWidth lay (Just screenW)
+        G.layoutSetAlignment lay G.AlignCenter
+      setAW lay (CPosition x') = do
+        G.layoutSetWidth lay (Just $ screenW - x' * 2)
+        G.layoutSetAlignment lay G.AlignLeft
 
 truePosition :: Double -> Double -> (CPosition, CPosition) -> (Double, Double)
-truePosition fsize _ (CPosition x', CPosition y') =
-  (x', y' + fsize)
-truePosition _ lw (CCenter, CPosition y') =
-  (toDouble (canvasW gCfg) / 2 - lw / 2, y')
+truePosition fsize _ (CPosition x', CPosition y') = (x', y' + fsize)
+truePosition _ _ (CCenter, CPosition y') = (0, y')
 truePosition _ _ (x', y') =
   error $ "called with x=" ++ show x' ++ " y=" ++ show y'
 
 renderLayout' :: String -> LayoutFunc -> CXy -> Double -> String -> C.Render Double
 renderLayout' fname lFun (x, y) fsize text = do
   C.save
-  (txt, lw, lh) <- liftIO $ stringToLayout fname lFun fsize text
+  (lay, lw, lh) <- liftIO $ stringToLayout fname lFun (x, y) fsize text
   let (xt, yt) = truePosition fsize lw (x, y)
   C.moveTo xt yt
-  G.showLayout txt
+  G.showLayout lay
   C.restore
   return $ yt + lh
 

@@ -4,9 +4,6 @@
 * キーバインドのヘルプを表示
 * wiiリモコンのヘルプを表示
 * メモリリーク解析
-* 行の折り返し
-  layoutSetWidth :: PangoLayout -> Maybe Double -> IO ()
-  layoutSetWrap :: PangoLayout -> LayoutWrapMode -> IO ()
 * man作成
 * pangoでmonospaceフォントを使わないとインデントが変
 * Graphics.Rendering.CairoとGraphics.UI.Gtkを再調整。Cairoは統合された？
