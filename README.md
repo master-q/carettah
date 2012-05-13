@@ -5,10 +5,14 @@
 * [haskell-platform](http://www.haskell.org/platform)
 * [Gtk2Hs](http://www.haskell.org/haskellwiki/Gtk2Hs)
 * [CWiid](http://abstrakraft.org/cwiid)
-* [モトヤマルベリフォント](https://android.git.kernel.org/?p=platform/frameworks/base.git;a=commit;h=173a55b5e3265c9695a9021edf8ac1d88b71764d)
-* [IPA明朝フォント](http://www.ipa.go.jp/osc/ipafont/)
+* [IPAフォント](http://www.ipa.go.jp/osc/ipafont/)
 
 あたりを入れてから、cabal install carettahで入ると思います。
+
+## 設計メモ
+
+* cairoFontMapGetDefault >>= pangoFontMapListFamilies :: IO [FontFamily] でフォント名のリストが得られる
+* pangoFontFamilyIsMonospace :: FontFamily -> Bool で等幅フォントか調べられる
 
 ## 謝辞
 
