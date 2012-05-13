@@ -24,7 +24,7 @@ toDouble :: Integral a => a -> Double
 toDouble = fromIntegral
 
 type LayoutFunc = G.PangoLayout -> G.Markup -> IO ()
-type LayoutFuncHemming = String -> CXy -> Double -> String -> IO (G.PangoLayout, G.PangoLayout, Double, Double)
+type LayoutFuncGlowing = String -> CXy -> Double -> String -> IO (G.PangoLayout, G.PangoLayout, Double, Double)
 
 stringToLayout :: String -> LayoutFunc -> CXy -> Double -> String -> IO (G.PangoLayout, Double, Double)
 stringToLayout fname func (x, _) fsize text = do
@@ -54,13 +54,13 @@ truePosition _ _ (CCenter, CPosition y') = (0, y')
 truePosition _ _ (x', y') =
   error $ "called with x=" ++ show x' ++ " y=" ++ show y'
 
-stringToLayoutBack :: LayoutFunc -> LayoutFunc -> LayoutFuncHemming
-stringToLayoutBack funcBack funcFront fname xy fsize text = do
+stringToLayoutGlowing :: LayoutFunc -> LayoutFunc -> LayoutFuncGlowing
+stringToLayoutGlowing funcBack funcFront fname xy fsize text = do
   (layB, _, _) <- stringToLayout fname funcBack xy fsize text
   (lay, lw, lh) <- stringToLayout fname funcFront xy fsize text
   return (layB, lay, lw, lh)
 
-renderLayout' :: String -> LayoutFuncHemming -> CXy -> Double -> String -> C.Render Double
+renderLayout' :: String -> LayoutFuncGlowing -> CXy -> Double -> String -> C.Render Double
 renderLayout' fname func (x, y) fsize text = do
   C.save
   (layB, lay, lw, lh) <- liftIO $ func fname (x, y) fsize text
@@ -75,22 +75,22 @@ renderLayout' fname func (x, y) fsize text = do
 
 renderLayoutM :: CXy -> Double -> String -> C.Render Double
 renderLayoutM = 
-  renderLayout' "IPA P明朝" (stringToLayoutBack fb ff)
+  renderLayout' "IPA P明朝" (stringToLayoutGlowing fb ff)
   where
     fb l t = void $ G.layoutSetMarkup l ("<span foreground=\"white\">" ++ G.escapeMarkup t ++ "</span>")
     ff = G.layoutSetText
 
-renderLayoutG' :: LayoutFuncHemming -> CXy -> Double -> String -> C.Render Double
+renderLayoutG' :: LayoutFuncGlowing -> CXy -> Double -> String -> C.Render Double
 renderLayoutG' = renderLayout' "IPAゴシック"
 
 renderLayoutG :: Attr -> CXy -> Double -> String -> C.Render Double
-renderLayoutG (_, [], _) xy fs txt = 
-  renderLayoutG' (stringToLayoutBack fb ff) xy fs txt
+renderLayoutG (_, [], _) = 
+  renderLayoutG' (stringToLayoutGlowing fb ff)
   where
     fb l t = void $ G.layoutSetMarkup l ("<span foreground=\"white\">" ++ G.escapeMarkup t ++ "</span>")
     ff = G.layoutSetText
-renderLayoutG (_, classs, _) xy fs txt =
-  renderLayoutG' (stringToLayoutBack fb ff) xy fs txt
+renderLayoutG (_, classs, _) =
+  renderLayoutG' (stringToLayoutGlowing fb ff)
   where
     fb l t = void $ G.layoutSetMarkup l (formatPangoMarkupWhite (head classs) t)
     ff l t = void $ G.layoutSetMarkup l (formatPangoMarkup (head classs) t)
