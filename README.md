@@ -5,7 +5,7 @@
 * [haskell-platform](http://www.haskell.org/platform)
 * [Gtk2Hs](http://www.haskell.org/haskellwiki/Gtk2Hs)
 * [CWiid](http://abstrakraft.org/cwiid)
-* [IPAフォント](http://www.ipa.go.jp/osc/ipafont/)
+* [IPAフォント](http://ossipedia.ipa.go.jp/ipafont/)
 
 あたりを入れてから、cabal install carettahで入ると思います。
 
