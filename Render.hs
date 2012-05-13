@@ -67,7 +67,7 @@ renderLayoutM :: CXy -> Double -> String -> C.Render Double
 renderLayoutM = renderLayout' "IPA P明朝" G.layoutSetText
 
 renderLayoutG' :: LayoutFunc -> CXy -> Double -> String -> C.Render Double
-renderLayoutG' = renderLayout' "IPA X0208 ゴシック"
+renderLayoutG' = renderLayout' "IPAゴシック"
 
 renderLayoutG :: Attr -> CXy -> Double -> String -> C.Render Double
 renderLayoutG (_, [], _) xy fs txt = 
