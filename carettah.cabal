@@ -4,8 +4,8 @@ Author:                 Kiwamu Okabe <kiwamu@debian.or.jp>
 Maintainer:             Kiwamu Okabe <kiwamu@debian.or.jp>
 License:                GPL-2
 License-File:           COPYING
-Synopsis:               A presentation tool writtten with Haskell.
-Description:            A presentation tool writtten with Haskell.
+Synopsis:               A presentation tool written with Haskell.
+Description:            A presentation tool written with Haskell.
 Category:               Graphics
 Stability:              Experimental
 Cabal-Version:          >= 1.6
