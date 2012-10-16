@@ -156,5 +156,5 @@ gCfg = Config {
   textCodeBlockOfs = 10,
   turtleSize = 40,
   waveSize = 20,
-  waveCharMax = 53 -- xxxxxx 本来はwaveSizeから検出すべき手で数えんなよwwww
+  waveCharMax = 37 -- xxxxxx 本来はwaveSizeから検出すべき手で数えんなよwwww
   }
