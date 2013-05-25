@@ -1,5 +1,5 @@
 Name:                   carettah
-Version:                0.1.2
+Version:                0.2.0
 Author:                 Kiwamu Okabe <kiwamu@debian.or.jp>
 Maintainer:             Kiwamu Okabe <kiwamu@debian.or.jp>
 License:                GPL-2
@@ -11,7 +11,7 @@ Stability:              Experimental
 Cabal-Version:          >= 1.6
 Build-Type:             Simple
 Homepage:               http://carettah.masterq.net/
-Tested-with:            GHC == 7.4.1
+Tested-with:            GHC == 7.6.3
 
 data-files:             data/turtle.png, data/debian.png, data/notfound.png
 
