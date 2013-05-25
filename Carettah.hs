@@ -21,15 +21,15 @@ import Render
 import WrapPaths
 
 markdown :: String -> P.Pandoc
-markdown = P.readMarkdown P.defaultParserState{ P.stateStandalone = True }
+markdown = P.readMarkdown P.def{ P.readerStandalone = True }
 
 splitBlocks :: P.Pandoc -> [[P.Block]]
 splitBlocks (P.Pandoc _ blocks) = go blocks
-  where go (P.Header 1 h:xs) =
+  where go (P.Header 1 _ h:xs) =
           let (b1, b2) = break check xs
-          in (P.Header 1 h:b1):go b2
+          in (P.Header 1 P.nullAttr h:b1):go b2
         go _ = []
-        check (P.Header 1 _) = True
+        check (P.Header 1 _ _) = True
         check _ = False
 
 backgroundTop :: [P.Block] -> [P.Block]
@@ -60,7 +60,7 @@ blockToSlide = map go
     go (P.Para [P.Image [P.Str "inline"] (pngfile, _)]) =
       \y -> renderPngInline (CCenter, CPosition y) (CFit, CFit) 
             1 pngfile
-    go (P.Header 1 strs) =
+    go (P.Header 1 _ strs) =
       \y -> renderLayoutM (CCenter, CPosition tty) tts (inlinesToString strs) >> return y
     go (P.BulletList plains) = \y -> yposSequence y $ map go' plains
       where
@@ -85,7 +85,7 @@ coverSlide = map go
     go :: P.Block -> Double -> C.Render Double
     go (P.Para [P.Image [P.Str "background"] (pngfile, _)]) =
       \y -> renderPngFit ag pngfile >> return y
-    go (P.Header 1 strs) =
+    go (P.Header 1 _ strs) =
       \y -> renderLayoutM (CCenter, CPosition ttcy) ttcs (inlinesToString strs) >> return y
     go (P.Para strs) =
       \y -> renderLayoutM (CCenter, CPosition tccy) tccs (inlinesToString strs) >> return y
