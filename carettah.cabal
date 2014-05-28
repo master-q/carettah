@@ -45,4 +45,4 @@ Executable              carettah
 
 Source-Repository head
   Type:                 git
-  Location:             git://gitorious.org/carettah/carettah.git
+  Location:             https://github.com/master-q/carettah.git
