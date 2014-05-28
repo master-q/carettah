@@ -15,7 +15,7 @@ Tested-with:            GHC == 7.6.3
 
 data-files:             data/turtle.png, data/debian.png, data/notfound.png
 
-Executable              carettah
+Executable              _carettah_main_
   hs-source-dirs:       .
   main-is:              Carettah.hs
   build-depends:        base >= 4 && < 5,
@@ -30,6 +30,13 @@ Executable              carettah
                         hcwiid,
                         highlighting-kate
   other-modules:        Paths_carettah Config Render WrapPaths FormatPangoMarkup
+  ghc-options:          -Wall -rtsopts
+  ghc-prof-options:     -auto-all -caf-all
+
+Executable              carettah
+  hs-source-dirs:       .
+  main-is:              Runner.hs
+  build-depends:        base >= 4 && < 5
   ghc-options:          -Wall
   ghc-prof-options:     -auto-all -caf-all
 

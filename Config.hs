@@ -94,8 +94,8 @@ setWiiHandle won
       Nothing  -> putStrLn "not found..."
       Just wmj -> do
         putStrLn "found!"
-        void $ cwiidSetRptMode wmj
-        void $ cwiidSetLed wmj
+        void $ cwiidSetRptMode wmj 2
+        void $ cwiidSetLed wmj (combineCwiidLedFlag [cwiidLed1, cwiidLed4])
         updateCarettahState (\s -> s { wiiHandle = WiiHandle wmj })
   | otherwise = return ()
 
