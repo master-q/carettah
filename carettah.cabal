@@ -1,5 +1,5 @@
 Name:                   carettah
-Version:                0.2.0
+Version:                0.3.0
 Author:                 Kiwamu Okabe <kiwamu@debian.or.jp>
 Maintainer:             Kiwamu Okabe <kiwamu@debian.or.jp>
 License:                GPL-2
@@ -36,7 +36,10 @@ Executable              _carettah_main_
 Executable              carettah
   hs-source-dirs:       .
   main-is:              Runner.hs
-  build-depends:        base >= 4 && < 5
+  build-depends:        base >= 4 && < 5,
+                        filepath,
+                        process
+  other-modules:        Paths_carettah
   ghc-options:          -Wall
   ghc-prof-options:     -auto-all -caf-all
 
