@@ -32,7 +32,6 @@ Executable              _carettah_main_
                         highlighting-kate
   other-modules:        Paths_carettah Config Render WrapPaths FormatPangoMarkup
   ghc-options:          -Wall -rtsopts
-  ghc-prof-options:     -auto-all -caf-all
 
 Executable              carettah
   hs-source-dirs:       .
@@ -42,7 +41,6 @@ Executable              carettah
                         process
   other-modules:        Paths_carettah
   ghc-options:          -Wall
-  ghc-prof-options:     -auto-all -caf-all
 
 Source-Repository head
   Type:                 git
