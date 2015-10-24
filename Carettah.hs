@@ -11,6 +11,7 @@ import System.FilePath ((</>),(<.>))
 import System.Directory (copyFile)
 import Control.Monad
 import Control.Monad.Reader
+import qualified Data.Text as T
 import qualified Graphics.UI.Gtk as G
 import qualified Graphics.Rendering.Cairo as C
 import qualified Text.Pandoc as P
@@ -156,7 +157,7 @@ startPresentation wiiOn presenTime = do
   void $ window `G.on` G.keyPressEvent $ G.tryEvent $ do
     keyName <- G.eventKeyName
     liftIO $
-      case keyName of
+      case T.unpack keyName of
         "f" -> G.windowFullscreen window
         "F" -> G.windowUnfullscreen window
         "q" -> G.widgetDestroy window

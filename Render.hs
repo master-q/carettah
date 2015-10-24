@@ -23,7 +23,8 @@ type CWl = (CSize, CSize)
 toDouble :: Integral a => a -> Double
 toDouble = fromIntegral
 
-type LayoutFunc = G.PangoLayout -> G.Markup -> IO ()
+-- type LayoutFunc = G.PangoLayout -> G.Markup -> IO ()
+type LayoutFunc = G.PangoLayout -> String -> IO ()
 type LayoutFuncGlowing = String -> CXy -> Double -> String -> IO (G.PangoLayout, G.PangoLayout, Double, Double)
 
 stringToLayout :: String -> LayoutFunc -> CXy -> Double -> String -> IO (G.PangoLayout, Double, Double)
@@ -77,7 +78,8 @@ renderLayoutM :: CXy -> Double -> String -> C.Render Double
 renderLayoutM = 
   renderLayout' "IPA P明朝" (stringToLayoutGlowing fb ff)
   where
-    fb l t = void $ G.layoutSetMarkup l ("<span foreground=\"white\">" ++ G.escapeMarkup t ++ "</span>")
+    fb l t = do _ <- G.layoutSetMarkup l ("<span foreground=\"white\">" ++ G.escapeMarkup t ++ "</span>") :: IO String
+                return ()
     ff = G.layoutSetText
 
 renderLayoutG' :: LayoutFuncGlowing -> CXy -> Double -> String -> C.Render Double
@@ -87,13 +89,16 @@ renderLayoutG :: Attr -> CXy -> Double -> String -> C.Render Double
 renderLayoutG (_, [], _) = 
   renderLayoutG' (stringToLayoutGlowing fb ff)
   where
-    fb l t = void $ G.layoutSetMarkup l ("<span foreground=\"white\">" ++ G.escapeMarkup t ++ "</span>")
+    fb l t = do _ <- G.layoutSetMarkup l ("<span foreground=\"white\">" ++ G.escapeMarkup t ++ "</span>") :: IO String
+                return ()
     ff = G.layoutSetText
 renderLayoutG (_, classs, _) =
   renderLayoutG' (stringToLayoutGlowing fb ff)
   where
-    fb l t = void $ G.layoutSetMarkup l (formatPangoMarkupWhite (head classs) t)
-    ff l t = void $ G.layoutSetMarkup l (formatPangoMarkup (head classs) t)
+    fb l t = do _ <- G.layoutSetMarkup l (formatPangoMarkupWhite (head classs) t) :: IO String
+                return ()
+    ff l t = do _ <- G.layoutSetMarkup l (formatPangoMarkup (head classs) t) :: IO String
+                return ()
 
 renderSurface :: Double -> Double -> Double -> C.Surface -> C.Render ()
 renderSurface x y alpha surface = do
