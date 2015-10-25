@@ -10,7 +10,7 @@ Category:               Graphics
 Stability:              Experimental
 Cabal-Version:          >= 1.6
 Build-Type:             Simple
-Homepage:               http://carettah.masterq.net/
+Homepage:               https://github.com/master-q/carettah
 Tested-with:            GHC == 7.6.3
 
 data-files:             data/turtle.png, data/debian.png, data/notfound.png
