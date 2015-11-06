@@ -24,7 +24,7 @@ Executable              _carettah_main_
                         time,
                         mtl,
                         directory,
-                        pandoc,
+                        pandoc >= 1.14,
                         gtk >= 0.13,
                         cairo,
                         pango,

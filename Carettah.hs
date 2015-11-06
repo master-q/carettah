@@ -22,7 +22,8 @@ import Render
 import WrapPaths
 
 markdown :: String -> P.Pandoc
-markdown = P.readMarkdown P.def{ P.readerStandalone = True }
+markdown s = r
+  where Right r = P.readMarkdown P.def{ P.readerStandalone = True } $ s
 
 splitBlocks :: P.Pandoc -> [[P.Block]]
 splitBlocks (P.Pandoc _ blocks) = go blocks
