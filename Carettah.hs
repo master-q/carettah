@@ -36,7 +36,7 @@ splitBlocks (P.Pandoc _ blocks) = go blocks
 
 backgroundTop :: [P.Block] -> [P.Block]
 backgroundTop blocks = filter go blocks ++ filter (not . go) blocks
-  where go (P.Para [P.Image [P.Str "background"] _]) = True
+  where go (P.Para [P.Image _ [P.Str "background"] _]) = True
         go _ = False
 
 inlinesToString :: [P.Inline] -> String
@@ -57,9 +57,9 @@ blockToSlide = map go
     tcbs = textCodeBlockSize gCfg
     tcbo = textCodeBlockOfs gCfg
     go :: P.Block -> Double -> C.Render Double
-    go (P.Para [P.Image [P.Str "background"] (pngfile, _)]) =
+    go (P.Para [P.Image _ [P.Str "background"] (pngfile, _)]) =
       \y -> renderPngFit ag pngfile >> return y
-    go (P.Para [P.Image [P.Str "inline"] (pngfile, _)]) =
+    go (P.Para [P.Image _ [P.Str "inline"] (pngfile, _)]) =
       \y -> renderPngInline (CCenter, CPosition y) (CFit, CFit) 
             1 pngfile
     go (P.Header 1 _ strs) =
@@ -85,7 +85,7 @@ coverSlide = map go
     tccy = textContextCoverY gCfg
     tccs = textContextCoverSize gCfg
     go :: P.Block -> Double -> C.Render Double
-    go (P.Para [P.Image [P.Str "background"] (pngfile, _)]) =
+    go (P.Para [P.Image _ [P.Str "background"] (pngfile, _)]) =
       \y -> renderPngFit ag pngfile >> return y
     go (P.Header 1 _ strs) =
       \y -> renderLayoutM (CCenter, CPosition ttcy) ttcs (inlinesToString strs) >> return y
