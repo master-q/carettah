@@ -1,4 +1,5 @@
-/dist
-/carettah
 *.hi
 *.o
+.stack-work/
+/carettah
+/dist

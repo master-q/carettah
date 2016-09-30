@@ -1,4 +1,4 @@
-# Carettah := Make your presentation more fun!
+# Carettah := Make your presentation more fun! [![Build Status](https://api.travis-ci.org/master-q/carettah.svg)](https://travis-ci.org/master-q/carettah)
 
 ## How to use
 
@@ -21,20 +21,20 @@ Put Wiimote in discoverable mode now (press 1+2)...
 
 Install below:
 
-* [haskell-platform](http://www.haskell.org/platform)
-* [Gtk2Hs](http://www.haskell.org/haskellwiki/Gtk2Hs)
+* [stack](https://www.stackage.org/)
 * [cwiid](http://abstrakraft.org/cwiid)
 * [Google Noto Fonts](http://www.google.com/get/noto/#/family/noto-sans-jpan) (need `Noto Sans CJK JP` and `Noto Sans Mono CJK JP`)
 
 ```
-$ sudo apt-get install haskell-platform gtk2hs-buildtools libcwiid-dev fonts-noto-cjk
+$ sudo apt-get install libcwiid-dev fonts-noto-cjk haskell-stack
 ```
 
-And cabal install.
+And stack install.
 
 ~~~
-$ cabal update
-$ cabal install carettah
+$ git clone https://github.com/master-q/carettah.git
+$ cd carettah
+$ stack install
 ~~~
 
 ## For more detail

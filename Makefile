@@ -1,16 +1,15 @@
 SRCS := $(wildcard *.hs)
 
-all: carettah
+all:
+	stack build
 
-carettah: Carettah.hs $(SRCS)
-	ghc --make -Wall -idata Carettah.hs -o carettah
+install:
+	stack install
 
 lint:
 	hlint -c $(SRCS)
 
 clean:
-	rm -rf carettah
-	rm -rf *.hi *.o *~
-	cd data/ && rm -rf *.hi *.o *~
+	stack clean
 
-.PHONY: lint clean
+.PHONY: all install lint clean
