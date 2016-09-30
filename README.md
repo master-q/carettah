@@ -34,6 +34,8 @@ And stack install.
 ~~~
 $ git clone https://github.com/master-q/carettah.git
 $ cd carettah
+$ stack setup
+$ stack install gtk2hs-buildtools
 $ stack install
 ~~~
 

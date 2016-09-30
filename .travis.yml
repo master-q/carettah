@@ -22,6 +22,7 @@ before_install:
   - mkdir -p ${HOME}/.local/bin
   - curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ${HOME}/.local/bin '*/stack'
   - export PATH=/opt/ghc/${GHCVER}/bin:/opt/cabal/${CABALVER}/bin:${HOME}/.local/bin:${HOME}/.cabal/bin:${PATH}
+  - stack --no-terminal --skip-ghc-check install gtk2hs-buildtools
   - ghc --version
 
 script:
