@@ -12,7 +12,7 @@ cache:
 matrix:
   include:
   - env: GHCVER=8.0.1 STACK_YAML=stack.yaml
-    addons: {apt: {packages: [ghc-8.0.1], sources: [hvr-ghc]}}
+    addons: {apt: {packages: [ghc-8.0.1,libcwiid-dev], sources: [hvr-ghc]}}
 
 before_install:
   - date
