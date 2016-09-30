@@ -1,8 +1,8 @@
 Name:                   carettah
-Version:                0.4.3
+Version:                0.5.0
 Author:                 Kiwamu Okabe <kiwamu@debian.or.jp>
 Maintainer:             Kiwamu Okabe <kiwamu@debian.or.jp>
-License:                GPL-2
+License:                GPL-3
 License-File:           COPYING
 Synopsis:               A presentation tool written with Haskell.
 Description:            A presentation tool written with Haskell.
@@ -11,7 +11,7 @@ Stability:              Experimental
 Cabal-Version:          >= 1.6
 Build-Type:             Simple
 Homepage:               https://github.com/master-q/carettah
-Tested-with:            GHC == 7.6.3
+Tested-with:            GHC == 8.0.1
 
 data-files:             data/turtle.png, data/debian.png, data/notfound.png
 
