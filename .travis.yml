@@ -1,5 +1,5 @@
-# Use new container infrastructure to enable caching
-sudo: false
+# Need to install cwiid package
+sudo: true
 
 # Choose a lightweight base image; we provide our own build tools.
 language: c
@@ -22,11 +22,11 @@ before_install:
   - mkdir -p ${HOME}/.local/bin
   - curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ${HOME}/.local/bin '*/stack'
   - export PATH=/opt/ghc/${GHCVER}/bin:/opt/cabal/${CABALVER}/bin:${HOME}/.local/bin:${HOME}/.cabal/bin:${PATH}
-  - stack --no-terminal --skip-ghc-check install gtk2hs-buildtools
   - ghc --version
 
 script:
   - cd ${TRAVIS_BUILD_DIR}
+  - stack --no-terminal --skip-ghc-check install gtk2hs-buildtools
   - stack --no-terminal --skip-ghc-check install
 
 after_script:
