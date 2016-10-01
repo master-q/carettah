@@ -1,5 +1,7 @@
 # Carettah := Make your presentation more fun! [![Build Status](https://api.travis-ci.org/master-q/carettah.svg)](https://travis-ci.org/master-q/carettah)
 
+[![Vimeo movie](./img/vimeo.png)](https://vimeo.com/53777328)
+
 ## How to use
 
 ~~~
