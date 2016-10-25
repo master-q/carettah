@@ -136,7 +136,9 @@ data Config = Config {
   textCodeBlockOfs :: Double,
   turtleSize :: Double,
   waveSize :: Double,
-  waveCharMax :: Double
+  waveCharMax :: Double,
+  fontNameP :: String,
+  fontNameM :: String
   }
 gCfg :: Config
 gCfg = Config {
@@ -156,5 +158,7 @@ gCfg = Config {
   textCodeBlockOfs = 10,
   turtleSize = 40,
   waveSize = 20,
-  waveCharMax = 42 -- xxxxxx 本来はwaveSizeから検出すべき手で数えんなよwwww
+  waveCharMax = 42, -- xxxxxx 本来はwaveSizeから検出すべき手で数えんなよwwww
+  fontNameP = "Noto Sans CJK JP",
+  fontNameM = "Noto Sans Mono CJK JP"
   }

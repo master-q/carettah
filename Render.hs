@@ -20,10 +20,6 @@ data CSize = CSize Double | CFit
 type CXy = (CPosition, CPosition)
 type CWl = (CSize, CSize)
 
-fontNameP, fontNameM :: String
-fontNameP = "Noto Sans CJK JP"
-fontNameM = "Noto Sans Mono CJK JP"
-
 toDouble :: Integral a => a -> Double
 toDouble = fromIntegral
 
@@ -80,14 +76,14 @@ renderLayout' fname func (x, y) fsize text = do
 
 renderLayoutM :: CXy -> Double -> String -> C.Render Double
 renderLayoutM = 
-  renderLayout' fontNameP (stringToLayoutGlowing fb ff)
+  renderLayout' (fontNameP gCfg) (stringToLayoutGlowing fb ff)
   where
     fb l t = do _ <- G.layoutSetMarkup l ("<span foreground=\"white\">" ++ G.escapeMarkup t ++ "</span>") :: IO String
                 return ()
     ff = G.layoutSetText
 
 renderLayoutG' :: LayoutFuncGlowing -> CXy -> Double -> String -> C.Render Double
-renderLayoutG' = renderLayout' fontNameM
+renderLayoutG' = renderLayout' $ fontNameM gCfg
 
 renderLayoutG :: Attr -> CXy -> Double -> String -> C.Render Double
 renderLayoutG (_, [], _) = 

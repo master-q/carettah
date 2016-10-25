@@ -31,7 +31,8 @@ Executable              _carettah_main_
                         pango,
                         hcwiid,
                         highlighting-kate,
-                        gtk2hs-buildtools
+                        gtk2hs-buildtools,
+                        config-value
   other-modules:        Paths_carettah Config Render WrapPaths FormatPangoMarkup
   ghc-options:          -Wall -rtsopts
 
