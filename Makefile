@@ -1,15 +1,15 @@
 SRCS := $(wildcard *.hs)
 
 all:
-	stack build
+	cabal build
 
 install:
-	stack install
+	cabal install
 
 lint:
 	hlint -c $(SRCS)
 
 clean:
-	stack clean
+	cabal clean
 
 .PHONY: all install lint clean
