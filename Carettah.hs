@@ -188,6 +188,10 @@ startPresentation wiiOn presenTime = do
                                      | b == cwiidBtnDown = endPage >> G.widgetQueueDraw canvas
                                      | b == cwiidBtnPlus = G.windowFullscreen window
                                      | b == cwiidBtnMinus = G.windowUnfullscreen window
+                                     | b == cwiidBtnHome =
+                                         do md <- queryCarettahState markdownFname
+                                            loadMarkdown md
+                                            curPage >> G.widgetQueueDraw canvas
                                      | otherwise = return ()
                             go bs
                             return True) 50
