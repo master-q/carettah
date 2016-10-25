@@ -27,8 +27,8 @@ toDouble = fromIntegral
 type LayoutFunc = G.PangoLayout -> String -> IO ()
 type LayoutFuncGlowing = String -> CXy -> Double -> String -> IO (G.PangoLayout, G.PangoLayout, Double, Double)
 
-stringToLayout :: String -> LayoutFunc -> CXy -> Double -> String -> IO (G.PangoLayout, Double, Double)
-stringToLayout fname func (x, _) fsize text = do
+stringToLayout :: Config -> String -> LayoutFunc -> CXy -> Double -> String -> IO (G.PangoLayout, Double, Double)
+stringToLayout cfg fname func (x, _) fsize text = do
   lay <- G.cairoCreateContext Nothing >>= G.layoutEmpty
   void $ func lay text
   G.layoutSetWrap lay G.WrapPartialWords
@@ -41,7 +41,7 @@ stringToLayout fname func (x, _) fsize text = do
   -- xxx inkとlogicalの違いは？
   return (lay, lw, lh)
     where
-      screenW = toDouble (canvasW gCfg)
+      screenW = toDouble (canvasW cfg)
       setAW lay CCenter = do
         G.layoutSetWidth lay (Just screenW)
         G.layoutSetAlignment lay G.AlignCenter
@@ -55,10 +55,10 @@ truePosition _ _ (CCenter, CPosition y') = (0, y')
 truePosition _ _ (x', y') =
   error $ "called with x=" ++ show x' ++ " y=" ++ show y'
 
-stringToLayoutGlowing :: LayoutFunc -> LayoutFunc -> LayoutFuncGlowing
-stringToLayoutGlowing funcBack funcFront fname xy fsize text = do
-  (layB, _, _) <- stringToLayout fname funcBack xy fsize text
-  (lay, lw, lh) <- stringToLayout fname funcFront xy fsize text
+stringToLayoutGlowing :: Config -> LayoutFunc -> LayoutFunc -> LayoutFuncGlowing
+stringToLayoutGlowing cfg funcBack funcFront fname xy fsize text = do
+  (layB, _, _) <- stringToLayout cfg fname funcBack xy fsize text
+  (lay, lw, lh) <- stringToLayout cfg fname funcFront xy fsize text
   return (layB, lay, lw, lh)
 
 renderLayout' :: String -> LayoutFuncGlowing -> CXy -> Double -> String -> C.Render Double
@@ -74,26 +74,26 @@ renderLayout' fname func (x, y) fsize text = do
   where
     moveShowLayout l (x', y') = C.moveTo x' y' >> G.showLayout l
 
-renderLayoutM :: CXy -> Double -> String -> C.Render Double
-renderLayoutM = 
-  renderLayout' (fontNameP gCfg) (stringToLayoutGlowing fb ff)
+renderLayoutM :: Config -> CXy -> Double -> String -> C.Render Double
+renderLayoutM cfg =
+  renderLayout' (fontNameP cfg) (stringToLayoutGlowing cfg fb ff)
   where
     fb l t = do _ <- G.layoutSetMarkup l ("<span foreground=\"white\">" ++ G.escapeMarkup t ++ "</span>") :: IO String
                 return ()
     ff = G.layoutSetText
 
-renderLayoutG' :: LayoutFuncGlowing -> CXy -> Double -> String -> C.Render Double
-renderLayoutG' = renderLayout' $ fontNameM gCfg
+renderLayoutG' :: Config -> LayoutFuncGlowing -> CXy -> Double -> String -> C.Render Double
+renderLayoutG' cfg = renderLayout' $ fontNameM cfg
 
-renderLayoutG :: Attr -> CXy -> Double -> String -> C.Render Double
-renderLayoutG (_, [], _) = 
-  renderLayoutG' (stringToLayoutGlowing fb ff)
+renderLayoutG :: Config -> Attr -> CXy -> Double -> String -> C.Render Double
+renderLayoutG cfg (_, [], _) = 
+  renderLayoutG' cfg (stringToLayoutGlowing cfg fb ff)
   where
     fb l t = do _ <- G.layoutSetMarkup l ("<span foreground=\"white\">" ++ G.escapeMarkup t ++ "</span>") :: IO String
                 return ()
     ff = G.layoutSetText
-renderLayoutG (_, classs, _) =
-  renderLayoutG' (stringToLayoutGlowing fb ff)
+renderLayoutG cfg (_, classs, _) =
+  renderLayoutG' cfg (stringToLayoutGlowing cfg fb ff)
   where
     fb l t = do _ <- G.layoutSetMarkup l (formatPangoMarkupWhite (head classs) t) :: IO String
                 return ()
@@ -136,15 +136,15 @@ renderPngSize = f
           C.restore
           return $ y + h
 
-renderPngInline :: CXy -> CWl -> Double -> FilePath -> C.Render Double
-renderPngInline = f
+renderPngInline :: Config -> CXy -> CWl -> Double -> FilePath -> C.Render Double
+renderPngInline cfg = f
   where f (CCenter, CPosition y) (CFit, CFit) alpha file = do
           C.save
           (surface, iw, ih) <- pngSurfaceSize file
           let diw = toDouble iw
               dih = toDouble ih
-              cw = toDouble (canvasW gCfg)
-              ch = toDouble (canvasH gCfg)
+              cw = toDouble (canvasW cfg)
+              ch = toDouble (canvasH cfg)
               wratio = cw / diw
               hratio = (ch - y) / dih
               scale = if wratio > hratio then hratio * 0.95 else wratio * 0.95
@@ -158,13 +158,13 @@ renderPngInline = f
           return $ y' + tih
         f _ _ _ _ = return 0 -- xxx renerPngFit統合して一関数にすべき
 
-renderPngFit :: Double -> FilePath -> C.Render ()
-renderPngFit = f
+renderPngFit :: Config -> Double -> FilePath -> C.Render ()
+renderPngFit cfg = f
   where f alpha file = do
           C.save
           (surface, iw, ih) <- pngSurfaceSize file
-          let cw = toDouble $ canvasW gCfg
-              ch = toDouble $ canvasH gCfg
+          let cw = toDouble $ canvasW cfg
+              ch = toDouble $ canvasH cfg
           C.scale (cw / toDouble iw) (ch / toDouble ih)
           renderSurface 0 0 alpha surface
           C.surfaceFinish surface
@@ -178,41 +178,41 @@ clearCanvas w h = do
   C.fill >> C.stroke >> C.restore
 
 -- xxx プレゼン時間に応じて波表示
-renderWave :: C.Render ()
-renderWave = do
+renderWave :: Config -> C.Render ()
+renderWave cfg = do
   sec <- liftIO elapsedSecFromStart
   smin <- queryCarettahState speechMinutes
-  let ws = waveSize gCfg
-      ch = toDouble $ canvasH gCfg
+  let ws = waveSize cfg
+      ch = toDouble $ canvasH cfg
       speechSec = 60 * smin
-      charMax = waveCharMax gCfg
+      charMax = waveCharMax cfg
       numChar = round $ charMax * sec / speechSec
-  void $ renderLayoutM (CPosition 0, CPosition $ ch - ws * 2) ws $ replicate numChar '>'
+  void $ renderLayoutM cfg (CPosition 0, CPosition $ ch - ws * 2) ws $ replicate numChar '>'
   return ()
 
-renderTurtle :: Double -> C.Render ()
-renderTurtle progress = do
+renderTurtle :: Config -> Double -> C.Render ()
+renderTurtle cfg progress = do
   fn <- liftIO . wrapGetDataFileName $ "data" </> "turtle" <.> "png"
   renderPngSize (ts / 2 + (cw - ts * 2) * progress) (ch - ts) ts ts 1 fn >> return ()
-    where ts = turtleSize gCfg
-          cw = toDouble $ canvasW gCfg
-          ch = toDouble $ canvasH gCfg
+    where ts = turtleSize cfg
+          cw = toDouble $ canvasW cfg
+          ch = toDouble $ canvasH cfg
 
 yposSequence :: Double -> [Double -> C.Render Double] -> C.Render Double
 yposSequence ypos (x:xs) = x ypos >>= (`yposSequence` xs)
 yposSequence ypos [] = return ypos
 
-renderSlideFilter :: Int -> Int -> [Double -> C.Render Double] -> C.Render ()
-renderSlideFilter w h s = do
+renderSlideFilter :: Config -> Int -> Int -> [Double -> C.Render Double] -> C.Render ()
+renderSlideFilter cfg w h s = do
   clearCanvas w h
-  let cw = toDouble $ canvasW gCfg
-      ch = toDouble $ canvasH gCfg
-      tcy = textContextY gCfg
+  let cw = toDouble $ canvasW cfg
+      ch = toDouble $ canvasH cfg
+      tcy = textContextY cfg
   C.scale (toDouble w / cw) (toDouble h / ch)
   void $ yposSequence tcy s
-  renderWave
+  renderWave cfg
 
-renderSlide :: [[Double -> C.Render Double]] -> Int -> Int -> Int -> C.Render ()
-renderSlide s p w h = do
-  renderSlideFilter w h (s !! p)
-  renderTurtle $ toDouble p / toDouble (length s - 1)
+renderSlide :: Config -> [[Double -> C.Render Double]] -> Int -> Int -> Int -> C.Render ()
+renderSlide cfg s p w h = do
+  renderSlideFilter cfg w h (s !! p)
+  renderTurtle cfg $ toDouble p / toDouble (length s - 1)

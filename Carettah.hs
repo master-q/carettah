@@ -58,21 +58,20 @@ blockToSlide cfg = map go
     tcbo = textCodeBlockOfs cfg
     go :: P.Block -> Double -> C.Render Double
     go (P.Para [P.Image _ [P.Str "background"] (pngfile, _)]) =
-      \y -> renderPngFit ag pngfile >> return y
+      \y -> renderPngFit cfg ag pngfile >> return y
     go (P.Para [P.Image _ [P.Str "inline"] (pngfile, _)]) =
-      \y -> renderPngInline (CCenter, CPosition y) (CFit, CFit) 
-            1 pngfile
+      \y -> renderPngInline cfg (CCenter, CPosition y) (CFit, CFit) 1 pngfile
     go (P.Header 1 _ strs) =
-      \y -> renderLayoutM (CCenter, CPosition tty) tts (inlinesToString strs) >> return y
+      \y -> renderLayoutM cfg (CCenter, CPosition tty) tts (inlinesToString strs) >> return y
     go (P.BulletList plains) = \y -> yposSequence y $ map go' plains
       where
         go' [P.Plain strs] =
-          \ypos -> renderLayoutM (CPosition tcx, CPosition ypos) tcs ("☆ " ++ inlinesToString strs)
+          \ypos -> renderLayoutM cfg (CPosition tcx, CPosition ypos) tcs ("☆ " ++ inlinesToString strs)
         go' x = error $ show x -- 一部のみをサポート
     go (P.CodeBlock attr ss) = \y ->
-      renderLayoutG attr (CPosition $ tcx + tcbo, CPosition y) tcbs ss
+      renderLayoutG cfg attr (CPosition $ tcx + tcbo, CPosition y) tcbs ss
     go (P.Para strs) =
-      \y -> renderLayoutM (CPosition tcx, CPosition y) tcs (inlinesToString strs)
+      \y -> renderLayoutM cfg (CPosition tcx, CPosition y) tcs (inlinesToString strs)
     go x = error $ show x -- 一部のみをサポート
 
 -- スライド表紙をRender
@@ -86,21 +85,21 @@ coverSlide cfg = map go
     tccs = textContextCoverSize cfg
     go :: P.Block -> Double -> C.Render Double
     go (P.Para [P.Image _ [P.Str "background"] (pngfile, _)]) =
-      \y -> renderPngFit ag pngfile >> return y
+      \y -> renderPngFit cfg ag pngfile >> return y
     go (P.Header 1 _ strs) =
-      \y -> renderLayoutM (CCenter, CPosition ttcy) ttcs (inlinesToString strs) >> return y
+      \y -> renderLayoutM cfg (CCenter, CPosition ttcy) ttcs (inlinesToString strs) >> return y
     go (P.Para strs) =
-      \y -> renderLayoutM (CCenter, CPosition tccy) tccs (inlinesToString strs) >> return y
+      \y -> renderLayoutM cfg (CCenter, CPosition tccy) tccs (inlinesToString strs) >> return y
     go x = error $ show x -- 一部のみをサポート
 
-updateCanvas :: G.DrawingArea -> IO ()
-updateCanvas canvas = do
+updateCanvas :: Config -> G.DrawingArea -> IO ()
+updateCanvas cfg canvas = do
   n <- queryCarettahState page
   s <- queryCarettahState slides
   win <- G.widgetGetDrawWindow canvas
   (width, height) <- G.widgetGetSize canvas
   G.renderWithDrawable win $
-    renderSlide s n width height
+    renderSlide cfg s n width height
   updateRenderdTime
   performGC
 
@@ -142,7 +141,7 @@ outputPDF cfg pdf = do
       dw = toDouble iw
       dh = toDouble ih
   C.withPDFSurface pdf dw dh $ flip C.renderWith . sequence_ $
-    fmap (\a -> renderSlide s a iw ih >> C.showPage) [0..(length s - 1)]
+    fmap (\a -> renderSlide cfg s a iw ih >> C.showPage) [0..(length s - 1)]
 
 startPresentation :: Config -> Bool -> Double -> IO ()
 startPresentation cfg wiiOn presenTime = do
@@ -171,7 +170,7 @@ startPresentation cfg wiiOn presenTime = do
                   curPage >> G.widgetQueueDraw canvas
         _   -> return ()
   void $ G.onDestroy window G.mainQuit
-  void $ G.onExpose canvas $ const (updateCanvas canvas >> return True)
+  void $ G.onExpose canvas $ const (updateCanvas cfg canvas >> return True)
   void $ G.timeoutAdd (do rtime <- queryCarettahState renderdTime
                           ntime <- getCurrentTime
                           let dtime :: Double
