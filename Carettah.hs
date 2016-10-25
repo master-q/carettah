@@ -46,16 +46,16 @@ inlinesToString = foldr go ""
         go x _ = show x
 
 -- 二枚目以降のスライドをRender
-blockToSlide :: [P.Block] -> [Double -> C.Render Double]
-blockToSlide = map go
+blockToSlide :: Config -> [P.Block] -> [Double -> C.Render Double]
+blockToSlide cfg = map go
   where
-    ag = alphaBackG gCfg
-    tty = textTitleY gCfg
-    tts = textTitleSize gCfg
-    tcx = textContextX gCfg
-    tcs = textContextSize gCfg
-    tcbs = textCodeBlockSize gCfg
-    tcbo = textCodeBlockOfs gCfg
+    ag = alphaBackG cfg
+    tty = textTitleY cfg
+    tts = textTitleSize cfg
+    tcx = textContextX cfg
+    tcs = textContextSize cfg
+    tcbs = textCodeBlockSize cfg
+    tcbo = textCodeBlockOfs cfg
     go :: P.Block -> Double -> C.Render Double
     go (P.Para [P.Image _ [P.Str "background"] (pngfile, _)]) =
       \y -> renderPngFit ag pngfile >> return y
@@ -76,14 +76,14 @@ blockToSlide = map go
     go x = error $ show x -- 一部のみをサポート
 
 -- スライド表紙をRender
-coverSlide :: [P.Block] -> [Double -> C.Render Double]
-coverSlide = map go
+coverSlide :: Config -> [P.Block] -> [Double -> C.Render Double]
+coverSlide cfg = map go
   where
-    ag = alphaBackG gCfg
-    ttcy = textTitleCoverY gCfg
-    ttcs = textTitleCoverSize gCfg
-    tccy = textContextCoverY gCfg
-    tccs = textContextCoverSize gCfg
+    ag = alphaBackG cfg
+    ttcy = textTitleCoverY cfg
+    ttcs = textTitleCoverSize cfg
+    tccy = textContextCoverY cfg
+    tccs = textContextCoverSize cfg
     go :: P.Block -> Double -> C.Render Double
     go (P.Para [P.Image _ [P.Str "background"] (pngfile, _)]) =
       \y -> renderPngFit ag pngfile >> return y
@@ -134,18 +134,18 @@ carettahOpts argv =
     (o,n,[]  ) -> return (foldl (flip id) defaultOptions o, n)
     (_,_,errs) -> hPutStrLn stderr (concat errs ++ usageInfo header options) >> exitFailure
 
-outputPDF :: String -> IO ()
-outputPDF pdf = do
+outputPDF :: Config -> String -> IO ()
+outputPDF cfg pdf = do
   s <- queryCarettahState slides
-  let iw = canvasW gCfg
-      ih = canvasH gCfg
+  let iw = canvasW cfg
+      ih = canvasH cfg
       dw = toDouble iw
       dh = toDouble ih
   C.withPDFSurface pdf dw dh $ flip C.renderWith . sequence_ $
     fmap (\a -> renderSlide s a iw ih >> C.showPage) [0..(length s - 1)]
 
-startPresentation :: Bool -> Double -> IO ()
-startPresentation wiiOn presenTime = do
+startPresentation :: Config -> Bool -> Double -> IO ()
+startPresentation cfg wiiOn presenTime = do
   -- setup
   setWiiHandle wiiOn
   updateSpeechMinutes $ const presenTime
@@ -153,7 +153,7 @@ startPresentation wiiOn presenTime = do
   void G.initGUI
   window <- G.windowNew
   canvas <- G.drawingAreaNew
-  G.widgetSetSizeRequest window (canvasW gCfg) (canvasH gCfg)
+  G.widgetSetSizeRequest window (canvasW cfg) (canvasH cfg)
   -- key event
   void $ window `G.on` G.keyPressEvent $ G.tryEvent $ do
     keyName <- G.eventKeyName
@@ -167,7 +167,7 @@ startPresentation wiiOn presenTime = do
         "g" -> topPage >> G.widgetQueueDraw canvas
         "G" -> endPage >> G.widgetQueueDraw canvas
         "r" -> do md <- queryCarettahState markdownFname
-                  loadMarkdown md
+                  loadMarkdown cfg md
                   curPage >> G.widgetQueueDraw canvas
         _   -> return ()
   void $ G.onDestroy window G.mainQuit
@@ -190,7 +190,7 @@ startPresentation wiiOn presenTime = do
                                      | b == cwiidBtnMinus = G.windowUnfullscreen window
                                      | b == cwiidBtnHome =
                                          do md <- queryCarettahState markdownFname
-                                            loadMarkdown md
+                                            loadMarkdown cfg md
                                             curPage >> G.widgetQueueDraw canvas
                                      | otherwise = return ()
                             go bs
@@ -201,10 +201,10 @@ startPresentation wiiOn presenTime = do
   updateRenderdTime
   G.mainGUI
 
-loadMarkdown :: String -> IO ()
-loadMarkdown fn = do
+loadMarkdown :: Config -> String -> IO ()
+loadMarkdown cfg fn = do
   s <- readFile fn
-  let z = zip (coverSlide:repeat blockToSlide) (splitBlocks $ markdown s)
+  let z = zip (coverSlide cfg:repeat (blockToSlide cfg)) (splitBlocks $ markdown s)
   updateSlides $ const $ map (\p -> fst p . backgroundTop $ snd p) z
 
 main :: IO ()
@@ -234,14 +234,14 @@ main = do
     _ -> return ()
   -- setup slide
   updateMarkdownFname $ const filen
-  loadMarkdown filen
+  loadMarkdown gCfg filen
   -- start
   case opts of
     (Options {optSlideInfo = True}) ->
       do s <- queryCarettahState slides
          putStrLn $ "Page: " ++ show (length s)
     (Options {optPdfOutput = Just pdf}) ->
-      outputPDF pdf
+      outputPDF gCfg pdf
     (Options {optWiimote = wiiOn, optTime = Just presenTime}) ->
-      startPresentation wiiOn presenTime
+      startPresentation gCfg wiiOn presenTime
     _ -> error "NOTREACHED"

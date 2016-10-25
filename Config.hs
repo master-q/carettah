@@ -158,7 +158,7 @@ gCfg = Config {
   textCodeBlockOfs = 10,
   turtleSize = 40,
   waveSize = 20,
-  waveCharMax = 42, -- xxxxxx 本来はwaveSizeから検出すべき手で数えんなよwwww
+  waveCharMax = 42, -- xxx Should be calculated from waveSize
   fontNameP = "Noto Sans CJK JP",
   fontNameM = "Noto Sans Mono CJK JP"
   }
