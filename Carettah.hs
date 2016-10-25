@@ -233,14 +233,37 @@ main = do
     _ -> return ()
   -- setup slide
   updateMarkdownFname $ const filen
-  loadMarkdown gCfg filen
+  loadMarkdown defaultConfig filen
   -- start
   case opts of
     (Options {optSlideInfo = True}) ->
       do s <- queryCarettahState slides
          putStrLn $ "Page: " ++ show (length s)
     (Options {optPdfOutput = Just pdf}) ->
-      outputPDF gCfg pdf
+      outputPDF defaultConfig pdf
     (Options {optWiimote = wiiOn, optTime = Just presenTime}) ->
-      startPresentation gCfg wiiOn presenTime
+      startPresentation defaultConfig wiiOn presenTime
     _ -> error "NOTREACHED"
+  where
+    defaultConfig :: Config
+    defaultConfig = Config {
+      canvasW   = 640,
+      canvasH  = 480,
+      alphaBackG = 0.3,
+      textTitleCoverY = 170,
+      textTitleCoverSize = 28,
+      textContextCoverY = 300,
+      textContextCoverSize = 26,
+      textTitleY = 35,
+      textTitleSize = 26,
+      textContextX = 40,
+      textContextY = 90,
+      textContextSize = 18,
+      textCodeBlockSize = 11,
+      textCodeBlockOfs = 10,
+      turtleSize = 40,
+      waveSize = 20,
+      waveCharMax = 42, -- xxx Should be calculated from waveSize
+      fontNameP = "Noto Sans CJK JP",
+      fontNameM = "Noto Sans Mono CJK JP"
+    }

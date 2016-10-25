@@ -1,5 +1,5 @@
 module Config (Config(..), Options(..), CarettahState(..),
-               gCfg, defaultOptions,
+               defaultOptions,
                curPage, nextPage, prevPage, topPage, endPage,
                setWiiHandle, updateWiiBtnFlag,
                updateSlides, queryCarettahState,
@@ -139,26 +139,4 @@ data Config = Config {
   waveCharMax :: Double,
   fontNameP :: String,
   fontNameM :: String
-  }
-gCfg :: Config
-gCfg = Config {
-  canvasW   = 640,
-  canvasH  = 480,
-  alphaBackG = 0.3,
-  textTitleCoverY = 170,
-  textTitleCoverSize = 28,
-  textContextCoverY = 300,
-  textContextCoverSize = 26,
-  textTitleY = 35,
-  textTitleSize = 26,
-  textContextX = 40,
-  textContextY = 90,
-  textContextSize = 18,
-  textCodeBlockSize = 11,
-  textCodeBlockOfs = 10,
-  turtleSize = 40,
-  waveSize = 20,
-  waveCharMax = 42, -- xxx Should be calculated from waveSize
-  fontNameP = "Noto Sans CJK JP",
-  fontNameM = "Noto Sans Mono CJK JP"
   }
