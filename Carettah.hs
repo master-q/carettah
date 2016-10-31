@@ -15,6 +15,7 @@ import qualified Data.Text as T
 import qualified Graphics.UI.Gtk as G
 import qualified Graphics.Rendering.Cairo as C
 import qualified Text.Pandoc as P
+import qualified Config as CFG
 import System.CWiid
 --
 import Config
@@ -203,8 +204,20 @@ startPresentation cfg wiiOn presenTime = do
 loadMarkdown :: Config -> String -> IO ()
 loadMarkdown cfg fn = do
   s <- readFile fn
-  let z = zip (coverSlide cfg:repeat (blockToSlide cfg)) (splitBlocks $ markdown s)
+  let blks = splitBlocks $ markdown s
+      ncfg = newCfg cfg (head blks)
+      z = zip (coverSlide ncfg:repeat (blockToSlide ncfg)) blks
   updateSlides $ const $ map (\p -> fst p . backgroundTop $ snd p) z
+  where
+    newCfg :: Config -> [P.Block] -> Config
+    newCfg cfg blks =
+      let blk = listToMaybe $ filter (\a -> a /= "") $ map go blks
+      in maybe cfg (newCfg' cfg) blk
+    newCfg' :: Config -> String -> Config
+    newCfg' oldCfg blk = oldCfg -- xxx
+    go :: P.Block -> String
+    go (P.CodeBlock ("config", _, _) ss) = ss
+    go _ = ""
 
 main :: IO ()
 main = do
