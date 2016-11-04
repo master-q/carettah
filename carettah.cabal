@@ -17,7 +17,7 @@ Tested-with:            GHC == 8.0.1
 data-files:             data/turtle.png, data/debian.png, data/notfound.png
 
 Executable              _carettah_main_
-  hs-source-dirs:       .
+  hs-source-dirs:       src
   main-is:              Carettah.hs
   build-depends:        base >= 4 && < 5,
                         text,
@@ -33,11 +33,15 @@ Executable              _carettah_main_
                         highlighting-kate,
                         gtk2hs-buildtools,
                         config-value
-  other-modules:        Paths_carettah Config Render WrapPaths FormatPangoMarkup
+  other-modules:        Paths_carettah
+                      , Carettah.Config
+                      , Carettah.Render
+                      , Carettah.WrapPaths
+                      , Carettah.FormatPangoMarkup
   ghc-options:          -Wall -rtsopts
 
 Executable              carettah
-  hs-source-dirs:       .
+  hs-source-dirs:       src
   main-is:              Runner.hs
   build-depends:        base >= 4 && < 5,
                         filepath,

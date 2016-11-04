@@ -1,7 +1,8 @@
-module Render (clearCanvas, CPosition(..), CSize(..), toDouble,
-               renderWave, renderTurtle, renderPngFit, renderPngInline,
-               renderLayoutG, renderLayoutM,
-               yposSequence, renderSlide) where
+module Carettah.Render (
+  clearCanvas, CPosition(..), CSize(..), toDouble,
+  renderWave, renderTurtle, renderPngFit, renderPngInline,
+  renderLayoutG, renderLayoutM,
+  yposSequence, renderSlide) where
 import System.FilePath ((</>),(<.>))
 import Control.Monad
 import Control.Monad.Reader
@@ -9,9 +10,9 @@ import Text.Pandoc (Attr)
 import qualified Graphics.UI.Gtk as G
 import qualified Graphics.Rendering.Cairo as C
 --
-import FormatPangoMarkup
-import Config
-import WrapPaths (wrapGetDataFileName)
+import Carettah.FormatPangoMarkup
+import Carettah.Config
+import Carettah.WrapPaths (wrapGetDataFileName)
 
 data CPosition = CPosition Double | CCenter
                deriving (Show, Eq, Ord)

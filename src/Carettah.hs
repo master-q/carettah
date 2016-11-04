@@ -18,9 +18,9 @@ import qualified Text.Pandoc as P
 import qualified Config as CFG
 import System.CWiid
 --
-import Config
-import Render
-import WrapPaths
+import Carettah.Config
+import Carettah.Render
+import Carettah.WrapPaths
 
 markdown :: String -> P.Pandoc
 markdown s = r
@@ -214,7 +214,9 @@ loadMarkdown cfg fn = do
       let blk = listToMaybe $ filter (\a -> a /= "") $ map go blks
       in maybe cfg (newCfg' cfg) blk
     newCfg' :: Config -> String -> Config
-    newCfg' oldCfg blk = oldCfg -- xxx
+    newCfg' oldCfg blk =
+      let Right value = CFG.parse (T.pack blk)
+      in oldCfg -- xxx
     go :: P.Block -> String
     go (P.CodeBlock ("config", _, _) ss) = ss
     go _ = ""

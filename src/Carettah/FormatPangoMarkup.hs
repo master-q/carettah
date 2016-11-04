@@ -1,4 +1,5 @@
-module FormatPangoMarkup (formatPangoMarkup, formatPangoMarkupWhite) where
+module Carettah.FormatPangoMarkup (
+  formatPangoMarkup, formatPangoMarkupWhite) where
 import Text.Highlighting.Kate
 import Graphics.Rendering.Pango
 

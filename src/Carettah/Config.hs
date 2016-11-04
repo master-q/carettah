@@ -1,10 +1,11 @@
-module Config (Config(..), Options(..), CarettahState(..),
-               defaultOptions,
-               curPage, nextPage, prevPage, topPage, endPage,
-               setWiiHandle, updateWiiBtnFlag,
-               updateSlides, queryCarettahState,
-               updateStartTime, updateRenderdTime, elapsedSecFromStart,
-               updateSpeechMinutes, updateMarkdownFname) where
+module Carettah.Config (
+  Config(..), Options(..), CarettahState(..),
+  defaultOptions,
+  curPage, nextPage, prevPage, topPage, endPage,
+  setWiiHandle, updateWiiBtnFlag,
+  updateSlides, queryCarettahState,
+  updateStartTime, updateRenderdTime, elapsedSecFromStart,
+  updateSpeechMinutes, updateMarkdownFname) where
 
 import Data.IORef
 import Data.Time

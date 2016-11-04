@@ -1,4 +1,4 @@
-module WrapPaths (wrapGetDataFileName, wrapVersion) where
+module Carettah.WrapPaths (wrapGetDataFileName, wrapVersion) where
 import Data.Version
 import Paths_carettah (getDataFileName, version)
 
