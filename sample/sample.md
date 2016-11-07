@@ -3,6 +3,11 @@
 
 Kiwamu Okabe
 
+```config
+fontNameP: "mikachan"
+fontNameM: "mikachan"
+```
+
 # 自己紹介
 ![background](enjoy.png)
 

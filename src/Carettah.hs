@@ -6,6 +6,7 @@ import System.Console.GetOpt
 import System.Exit
 import Data.Time
 import Data.Maybe
+import Data.Either
 import Data.Version (showVersion)
 import System.FilePath ((</>),(<.>))
 import System.Directory (copyFile)
@@ -73,7 +74,7 @@ blockToSlide cfg = map go
       renderLayoutG cfg attr (CPosition $ tcx + tcbo, CPosition y) tcbs ss
     go (P.Para strs) =
       \y -> renderLayoutM cfg (CPosition tcx, CPosition y) tcs (inlinesToString strs)
-    go x = error $ show x -- 一部のみをサポート
+    go x = return -- 一部のみをサポート
 
 -- スライド表紙をRender
 coverSlide :: Config -> [P.Block] -> [Double -> C.Render Double]
@@ -91,7 +92,7 @@ coverSlide cfg = map go
       \y -> renderLayoutM cfg (CCenter, CPosition ttcy) ttcs (inlinesToString strs) >> return y
     go (P.Para strs) =
       \y -> renderLayoutM cfg (CCenter, CPosition tccy) tccs (inlinesToString strs) >> return y
-    go x = error $ show x -- 一部のみをサポート
+    go _ = return -- 一部のみをサポート
 
 updateCanvas :: Config -> G.DrawingArea -> IO ()
 updateCanvas cfg canvas = do
@@ -215,10 +216,26 @@ loadMarkdown cfg fn = do
       in maybe cfg (newCfg' cfg) blk
     newCfg' :: Config -> String -> Config
     newCfg' oldCfg blk =
-      let Right value = CFG.parse (T.pack blk)
-      in oldCfg -- xxx
+      let r = CFG.parse (T.pack blk)
+      in either (const oldCfg) (valueToCfg cfg) r
+    valueToCfg :: Config -> CFG.Value -> Config
+    valueToCfg oldCfg (CFG.Sections [
+                          CFG.Section { CFG.sectionName  = fontNameP_name,
+                                        CFG.sectionValue = CFG.Text fontNameP_value },
+                          CFG.Section { CFG.sectionName  = fontNameM_name,
+                                        CFG.sectionValue = CFG.Text fontNameM_value }
+                          ]) =
+      let fnp, fnm :: String
+          fnp = if T.unpack fontNameP_name == "fontNameP"
+                then T.unpack fontNameP_value
+                else fontNameP oldCfg
+          fnm = if T.unpack fontNameM_name == "fontNameM"
+                then T.unpack fontNameM_value
+                else fontNameM oldCfg
+      in oldCfg { fontNameP = fnp, fontNameM = fnm }
+    valueToCfg oldCfg _ = oldCfg
     go :: P.Block -> String
-    go (P.CodeBlock ("config", _, _) ss) = ss
+    go (P.CodeBlock ("", ["config"], _) ss) = ss
     go _ = ""
 
 main :: IO ()
