@@ -21,6 +21,7 @@ tokColor FunctionTok       = "<span foreground=\"#06287e\">"
 tokColor RegionMarkerTok   = "<span>"
 tokColor ErrorTok          = "<span foreground=\"red\">"
 tokColor NormalTok         = "<span>"
+tokColor _                 = "<span>"
 
 tokShape :: TokenType -> String
 tokShape KeywordTok        = "<span font_weight=\"bold\">"
@@ -37,6 +38,7 @@ tokShape FunctionTok       = "<span>"
 tokShape RegionMarkerTok   = "<span>"
 tokShape ErrorTok          = "<span font_weight=\"bold\">"
 tokShape NormalTok         = "<span>"
+tokShape _                 = "<span>"
 
 tagTok, tagTokShape :: Token -> String
 tagTok (t, s) = tokColor t ++ tokShape t ++ escapeMarkup s ++ "</span></span>"
