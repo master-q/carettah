@@ -30,7 +30,7 @@ Executable              _carettah_main_
                         cairo,
                         pango,
                         hcwiid,
-                        highlighting-kate,
+                        highlighting-kate >= 0.6.4,
                         gtk2hs-buildtools,
                         config-value
   other-modules:        Paths_carettah
