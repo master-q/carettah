@@ -120,7 +120,7 @@ options =
     "set presentation time with minutes"
   , Option "i"     ["info"]
     (NoArg (\ opts -> opts { optSlideInfo = True }))
-    "show slide infomation"
+    "show slide information"
   , Option "n"     ["new-slide"]
     (NoArg (\ opts -> opts { optNewTemp = True }))
     "create a new slide file and open it"
